@@ -141,7 +141,7 @@ Google Drive OAuth is blocked until the callback URI is registered.
 
 ## Current slice
 
-Implemented: auth (login/register/session, forgot/reset password, invitations/accept),
+Implemented: auth (login/register/session, Google sign-in, forgot/reset password, invitations/accept),
 email module (Resend), workspace shell + RBAC guards,
 backup module (create/preview/restore/delete, DB + filesystem + Drive adapter),
 tasks (statuses, multiple assignees, create-on-the-go tags, comments) with one gatekeeper,

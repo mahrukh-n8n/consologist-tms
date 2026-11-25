@@ -43,7 +43,7 @@ For local Docker runs, keep the values in the gitignored `.env.docker` file.
 | `BACKUP_SCHEDULE_PASSWORD` | for scheduled backups | ≥ 8 chars |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | email | Verified sender domain required |
 | `GOOGLE_DRIVE_CLIENT_ID/SECRET/ENCRYPTION_KEY`, `GOOGLE_DRIVE_REDIRECT_URI` | file uploads | Redirect URI must be `{APP_URL}/api/google-drive/callback` |
-| `GOOGLE_CLIENT_ID/SECRET` | optional | Google login |
+| `GOOGLE_CLIENT_ID/SECRET` | optional | Google login; redirect `{APP_URL}/api/auth/google/callback` |
 
 `NEXT_PUBLIC_*` is not used by this app, so there are no build-time public args to pass.
 
@@ -61,7 +61,7 @@ For local Docker runs, keep the values in the gitignored `.env.docker` file.
 ## Reverse proxy
 
 Forward to the **container** port 3000 (not the host mapping 3200), scheme `http`.
-Register `https://your-domain/api/google-drive/callback` in Google Cloud Console.
+Register both redirect URIs in Google Cloud Console: `https://your-domain/api/auth/google/callback` (login) and `https://your-domain/api/google-drive/callback` (Drive).
 
 ## MCP
 

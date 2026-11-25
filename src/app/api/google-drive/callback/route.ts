@@ -5,6 +5,7 @@ import { getActiveCompany } from "@/lib/company/get-active-company";
 import { prisma } from "@/lib/db";
 import { exchangeCode, saveConnection } from "@/modules/google-drive";
 import { requirePageWrite } from "@/modules/auth-rbac/middleware/page-access";
+import { appOrigin, appUrl } from "@/lib/http/app-origin";
 
 export const dynamic = "force-dynamic";
 
@@ -37,15 +38,15 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const expected = cookieStore.get("gd_oauth_state")?.value;
   if (!code || !state || !expected || state !== expected) {
-    return NextResponse.redirect(new URL("/manage-system/drive?error=state", url.origin));
+    return NextResponse.redirect(appUrl("/manage-system/drive?error=state", url.origin));
   }
   cookieStore.delete("gd_oauth_state");
 
   const clientId = process.env.GOOGLE_DRIVE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_DRIVE_CLIENT_SECRET;
-  const redirectUri = process.env.GOOGLE_DRIVE_REDIRECT_URI ?? `${process.env.APP_URL ?? url.origin}/api/google-drive/callback`;
+  const redirectUri = process.env.GOOGLE_DRIVE_REDIRECT_URI ?? `${appOrigin(url.origin)}/api/google-drive/callback`;
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(new URL("/manage-system/drive?error=config", url.origin));
+    return NextResponse.redirect(appUrl("/manage-system/drive?error=config", url.origin));
   }
 
   try {
@@ -58,9 +59,9 @@ export async function GET(request: Request) {
       folderName: folder.name,
       connectedByUserId: user.id,
     });
-    return NextResponse.redirect(new URL("/manage-system/drive?connected=1", url.origin));
+    return NextResponse.redirect(appUrl("/manage-system/drive?connected=1", url.origin));
   } catch (error) {
     console.error("Drive callback failed:", error);
-    return NextResponse.redirect(new URL("/manage-system/drive?error=exchange", url.origin));
+    return NextResponse.redirect(appUrl("/manage-system/drive?error=exchange", url.origin));
   }
 }
