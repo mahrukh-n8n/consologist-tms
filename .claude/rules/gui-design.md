@@ -7,6 +7,7 @@ alwaysApply: true
 
 ## Keep pages easy to scan
 
+- Follow consistent sizing, alignment, spacing and behaviour in UI controls.
 - Put the information and actions people need most in the main view. Keep rows compact, use short labels, and remove text that repeats a nearby label or icon.
 - Group related settings by task. Use clearly named tabs for distinct groups and let the content use the available width. Collapse advanced options and summarize what is configured.
 - Show saved settings first. Open editing through a clear **Add** or **Edit** action. Keep the active context visible and link setup warnings directly to the affected fields or rows.
