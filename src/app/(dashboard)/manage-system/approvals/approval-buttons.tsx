@@ -30,7 +30,7 @@ export function ApprovalButtons({ id }: { id: number }) {
       </form>
       <form action={rejectSubmit} className="flex items-center gap-2">
         <input type="hidden" name="id" value={id} />
-        <Input name="reason" placeholder="Rejection reason" className="h-8 w-48" required />
+        <Input name="reason" placeholder="Rejection reason" compact className="w-48" required />
         <Button type="submit" variant="destructive" size="sm" disabled={rejecting}>
           {rejecting ? "Rejecting…" : "Reject"}
         </Button>

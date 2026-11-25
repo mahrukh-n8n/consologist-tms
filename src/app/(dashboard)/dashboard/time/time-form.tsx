@@ -22,7 +22,7 @@ export function TimeCreateForm({ projects }: { projects: { id: number; name: str
   }, [state]);
   if (projects.length === 0) return <p className="text-sm text-muted-foreground">Create a project first.</p>;
   return (
-    <form ref={ref} action={action} className="grid gap-3 lg:grid-cols-4">
+    <form ref={ref} action={action} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <div className="space-y-1.5">
         <Label htmlFor="create-time-projectId">Project</Label>
         <SearchableSelect id="create-time-projectId" noClear value={projectId} onChange={setProjectId} options={projects.map((p) => ({ value: String(p.id), label: p.name }))} />
@@ -40,7 +40,7 @@ export function TimeCreateForm({ projects }: { projects: { id: number; name: str
         <Label htmlFor="create-time-description">Description</Label>
         <Input id="create-time-description" name="description" placeholder="What did you work on?" />
       </div>
-      <div className="lg:col-span-4">
+      <div className="col-span-full">
         <Button type="submit" variant="accent" disabled={pending}><Clock className="size-4" />{pending ? "Logging…" : "Add record"}</Button>
       </div>
     </form>

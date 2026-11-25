@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function TagInput({
@@ -32,7 +33,7 @@ export function TagInput({
   return (
     <div className="space-y-2">
       <input type="hidden" name={name} value={tags.join(",")} />
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap gap-1.5 empty:hidden">
         {tags.map((tag) => (
           <span key={tag} className="chip chip-cyan">
             {tag}
@@ -56,16 +57,17 @@ export function TagInput({
           }}
           onBlur={() => add(draft)}
           placeholder={placeholder}
-          className="h-10"
         />
-        <button
+        <Button
+          size="icon"
+          variant="accent"
           type="button"
           aria-label="Add tag"
           onClick={() => add(draft)}
-          className="flex size-10 shrink-0 items-center justify-center rounded-xl border-2 border-ink bg-accent shadow-[3px_3px_0_var(--ink)] hover:-translate-y-0.5"
+          className="shrink-0"
         >
           <Plus className="size-4" />
-        </button>
+        </Button>
       </div>
       {unused.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5">

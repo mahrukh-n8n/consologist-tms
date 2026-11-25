@@ -28,7 +28,7 @@ export function SubtaskForm({ projectId, listId, parentId }: { projectId: number
       <input type="hidden" name="listId" value={listId} />
       <input type="hidden" name="parentId" value={parentId} />
       <div className="min-w-56 flex-1">
-        <Input name="title" required maxLength={500} placeholder="Subtask title" aria-label="Subtask title" />
+        <Input compact name="title" required maxLength={500} placeholder="Subtask title" aria-label="Subtask title" />
       </div>
       <Button type="submit" size="sm" disabled={pending}>
         <Plus className="mr-1.5 size-4" /> {pending ? "Adding…" : "Add subtask"}

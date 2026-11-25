@@ -35,8 +35,8 @@ export default async function PermissionsPage() {
           {members.length === 0 || templates.length === 0 ? <p className="text-sm text-muted-foreground">Invite users and seed templates first.</p> : (
             <NotifyForm action={assignTemplateAction} actionId="assign-template" submitLabel="Assign" successTitle="Template assigned" errorTitle="Assignment failed"
               fields={[
-                { kind: "select", name: "userId", label: "User", required: true, className: "min-w-72 space-y-1", options: members.map((m) => ({ value: String(m.user.id), label: `${m.user.fullName} <${m.user.email}>` })) },
-                { kind: "select", name: "templateId", label: "Template", required: true, className: "min-w-64 space-y-1", options: templates.map((t) => ({ value: String(t.id), label: `${t.name} (${t.pages.length} pages)` })) },
+                { kind: "select", name: "userId", label: "User", required: true, className: "min-w-0 flex-[1_1_18rem] space-y-1", options: members.map((m) => ({ value: String(m.user.id), label: `${m.user.fullName} <${m.user.email}>` })) },
+                { kind: "select", name: "templateId", label: "Template", required: true, className: "min-w-0 flex-[1_1_16rem] space-y-1", options: templates.map((t) => ({ value: String(t.id), label: `${t.name} (${t.pages.length} pages)` })) },
               ]} />
           )}
         </CardContent>

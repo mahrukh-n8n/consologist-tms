@@ -130,6 +130,11 @@
   }
 }
 
+@theme {
+  --spacing-control: 2.75rem;
+  --spacing-control-sm: 2.25rem;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -240,22 +245,31 @@ body {
   text-transform: uppercase;
 }
 
-.block-input {
-  background: var(--card);
-  border: 2px solid var(--ink);
-  border-radius: 0.65rem;
-  box-shadow: var(--block-shadow-sm);
-  min-height: 2.75rem;
-  padding: 0.55rem 0.8rem;
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  transition: box-shadow var(--motion) ease, transform var(--motion) ease;
-}
-.block-input:focus-visible {
-  outline: 3px solid var(--ring);
-  outline-offset: 2px;
-  box-shadow: 2px 2px 0 var(--ink);
-  transform: translate(1px, 1px);
+@layer components {
+  .block-input {
+    @apply h-control min-w-0 max-w-full rounded-xl px-3 text-sm leading-5;
+    background: var(--card);
+    color: var(--foreground);
+    border: var(--block-border);
+    box-shadow: var(--block-shadow-sm);
+  }
+  .block-input[data-compact="true"] {
+    @apply h-control-sm rounded-lg px-2.5;
+    border: 1px solid var(--input);
+    box-shadow: none;
+  }
+  .block-input:focus-visible {
+    outline: 3px solid var(--ring);
+    outline-offset: 2px;
+  }
+  input.block-input[type="file"]::file-selector-button {
+    height: 100%;
+    margin-inline-end: 0.5rem;
+    font-weight: 600;
+  }
+  .picker-trigger {
+    @apply flex w-full items-center gap-2 text-left font-semibold hover:bg-muted;
+  }
 }
 
 .chip {

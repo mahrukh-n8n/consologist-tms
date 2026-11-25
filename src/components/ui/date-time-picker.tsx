@@ -54,15 +54,14 @@ export function DateTimePicker({
   return (
     <div className={cn(compact ? "space-y-1" : "space-y-2", className)}>
       <input type="hidden" name={name} value={value} />
-      <div className="flex gap-1.5">
+      <div className="flex items-center gap-2">
       <Popover>
         <PopoverTrigger asChild>
           <button
             id={id ?? name}
             type="button"
-            className={compact
-              ? "flex min-h-8 w-full items-center gap-1.5 rounded-lg border border-border bg-card px-2 py-1 text-left text-xs font-semibold hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              : "flex min-h-11 w-full items-center gap-2 rounded-xl border-2 border-ink bg-card px-3 py-2 text-left text-sm font-semibold shadow-[3px_3px_0_var(--ink)] transition hover:-translate-y-0.5 hover:shadow-[5px_5px_0_var(--ink)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"}
+            data-compact={compact}
+            className="block-input picker-trigger"
           >
             <CalendarDays className={compact ? "size-3.5 shrink-0 text-primary" : "size-4 shrink-0 text-primary"} />
             <span className={cn("truncate", !date && "text-muted-foreground")}>
@@ -86,7 +85,8 @@ export function DateTimePicker({
                 type="time"
                 value={time}
                 onChange={(event) => commit(date, event.target.value)}
-                className="mt-1 h-9 shadow-none"
+                compact
+                className="mt-1"
               />
             </div>
           ) : null}
@@ -97,7 +97,8 @@ export function DateTimePicker({
           type="button"
           aria-label="Clear date"
           onClick={() => commit(undefined)}
-          className={compact ? "flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-card hover:bg-muted" : "flex size-11 shrink-0 items-center justify-center rounded-xl border-2 border-ink bg-card shadow-[3px_3px_0_var(--ink)] hover:bg-muted"}
+          data-compact={compact}
+          className="block-input flex aspect-square shrink-0 items-center justify-center px-0 hover:bg-muted"
         >
           <X className="size-4" />
         </button>

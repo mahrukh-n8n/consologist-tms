@@ -92,14 +92,14 @@ export function TasksToolbar({
                 <p className="text-muted-foreground">{list.projectName} · {list.count} tasks</p>
                 <details className="mt-1">
                   <summary className="cursor-pointer text-[10px] font-bold uppercase text-muted-foreground">Manage</summary>
-                  <div className="mt-1 space-y-1">
+                  <div className="mt-2 space-y-2">
                     <NotifyForm
                       action={renameTaskListAction}
                       actionId={`rename-list-${list.id}`}
                       submitLabel="Rename"
                       successTitle="List renamed"
                       errorTitle="List not renamed"
-                      className="flex flex-wrap items-end gap-1"
+                      className="flex flex-wrap items-end gap-2"
                       fields={[
                         { kind: "hidden", name: "listId", defaultValue: String(list.id) },
                         { kind: "text", name: "name", label: "Name", required: true, defaultValue: list.name },

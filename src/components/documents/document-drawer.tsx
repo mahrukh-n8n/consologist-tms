@@ -46,9 +46,8 @@ export function DocumentButton({ document, compact = false }: { document: Docume
       <Button
         type="button"
         variant={compact ? "ghost" : "outline"}
-        size="sm"
+        size={compact ? "icon-sm" : "sm"}
         onClick={() => setOpen(true)}
-        className={compact ? "size-8 p-0" : undefined}
         aria-label={`Open document ${document.title}`}
       >
         <FileText className="size-4" />{compact ? null : "Open"}
@@ -143,19 +142,19 @@ function DocumentDrawer({ document, onClose }: { document: DocumentData; onClose
       <button type="button" className="flex-1 cursor-default" aria-label="Close document" onClick={onClose} />
       <aside className={`flex h-full w-full flex-col border-l border-border bg-background shadow-2xl ${fullscreen ? "max-w-none" : "max-w-4xl"}`}>
         <header className="flex flex-wrap items-center gap-2 border-b border-border p-3">
-          <Input value={title} onChange={(event) => setTitle(event.target.value)} aria-label="Document title" className="h-9 min-w-0 flex-1 font-bold" />
+          <Input value={title} onChange={(event) => setTitle(event.target.value)} aria-label="Document title" compact className="min-w-36 flex-1 font-bold" />
           <Button type="button" variant="outline" size="sm" onClick={() => setOutlineOpen((value) => !value)} aria-pressed={outlineOpen}>
             <ListTree className="size-4" /> Outline
           </Button>
           <VoiceNoteRecorder onRecorded={upload} disabled={pending} />
-          <label className="inline-flex min-h-8 cursor-pointer items-center gap-1 rounded-md border border-border px-2 text-xs font-bold uppercase">
+          <label className="inline-flex h-control-sm cursor-pointer items-center gap-1 rounded-md border border-border px-2 text-xs font-bold uppercase">
             <Paperclip className="size-3.5" /> Attach
             <input type="file" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) upload(file); }} />
           </label>
-          <Button type="button" variant="outline" size="sm" onClick={() => setFullscreen((value) => !value)} aria-label={fullscreen ? "Exit full screen" : "Full screen"}>
+          <Button type="button" variant="outline" size="icon-sm" onClick={() => setFullscreen((value) => !value)} aria-label={fullscreen ? "Exit full screen" : "Full screen"}>
             {fullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
           </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={onClose} aria-label="Close"><X className="size-4" /></Button>
+          <Button type="button" variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close"><X className="size-4" /></Button>
         </header>
 
         <div className="flex min-h-0 flex-1">
@@ -205,7 +204,7 @@ function DocumentDrawer({ document, onClose }: { document: DocumentData; onClose
             <details className="border-t border-border p-3">
               <summary className="cursor-pointer text-xs font-bold uppercase text-destructive">Delete document</summary>
               <div className="mt-2 flex flex-wrap items-end gap-2">
-                <Input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Reason (required)" className="h-8 w-64" />
+                <Input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Reason (required)" compact className="w-64" />
                 <Button type="button" variant="destructive" size="sm" disabled={pending || !reason.trim()} onClick={remove}>
                   {pending ? "Deleting…" : "Delete"}
                 </Button>

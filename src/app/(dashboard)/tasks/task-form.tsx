@@ -85,7 +85,7 @@ export function TaskCreateForm({
 
   return (
     <form ref={formRef} action={action} className="space-y-5">
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor="title">Task title</Label>
         <Input
           id="title"
@@ -93,11 +93,11 @@ export function TaskCreateForm({
           required
           maxLength={500}
           placeholder="What needs to happen?"
-          className="h-14 rounded-2xl text-lg font-bold"
+          className="font-bold"
         />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="projectId">Project</Label>
           <SearchableSelect
@@ -142,7 +142,7 @@ export function TaskCreateForm({
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label>Assignees</Label>
           <AssigneePicker members={selectedProject?.members ?? []} value={assigneeIds} onChange={setAssigneeIds} />
@@ -182,7 +182,7 @@ export function TaskCreateForm({
         <p className="text-xs font-semibold text-muted-foreground">
           {assigneeIds.length > 0 ? `${assigneeIds.length} assignee${assigneeIds.length === 1 ? "" : "s"} will be notified of due dates and comments.` : "Assign people to send due-date and comment alerts."}
         </p>
-        <Button type="submit" size="lg" variant="accent" disabled={pending}>
+        <Button type="submit" variant="accent" disabled={pending}>
           <Plus className="size-5" />
           {pending ? "Creating…" : "Create task"}
         </Button>

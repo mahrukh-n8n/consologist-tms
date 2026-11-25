@@ -103,6 +103,7 @@ export function ProjectMembers({
               <div className="flex flex-wrap items-end gap-2">
                 <div className="min-w-56 flex-1">
                   <SearchableSelect
+                    compact
                     id={`add-member-${projectId}`}
                     noClear
                     value={userId}
@@ -111,7 +112,7 @@ export function ProjectMembers({
                   />
                 </div>
                 <Button type="submit" size="sm" disabled={adding || !userId}>
-                  <UserPlus className="mr-1.5 size-4" /> {adding ? "Adding…" : "Add"}
+                  <UserPlus className="size-4" /> {adding ? "Adding…" : "Add"}
                 </Button>
               </div>
             </form>

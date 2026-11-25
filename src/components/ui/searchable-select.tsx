@@ -37,6 +37,7 @@ export interface SearchableSelectProps {
   disabled?: boolean;
   id?: string;
   className?: string;
+  compact?: boolean;
   /** If true, no clear (×) button rendered — for required fields where empty is invalid */
   noClear?: boolean;
   /**
@@ -57,6 +58,7 @@ export function SearchableSelect({
   disabled,
   id,
   className,
+  compact,
   noClear,
   filterCategories,
   categoryLayout = "chips",
@@ -294,8 +296,9 @@ export function SearchableSelect({
           disabled={disabled}
           aria-expanded={isOpen}
           aria-controls={dropdownId}
+          data-compact={compact}
           className={cn(
-            "flex h-11 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-left text-sm shadow-sm transition-colors hover:border-ring focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+            "block-input picker-trigger justify-between disabled:cursor-not-allowed disabled:opacity-50",
             hasSelection && !noClear && "pr-16"
           )}
           title={hasSelection ? selectedLabel : placeholder}
@@ -311,6 +314,7 @@ export function SearchableSelect({
         <Input
           ref={inputRef}
           id={id}
+          compact={compact}
           placeholder={placeholder}
           value={searchText}
           title={searchText}

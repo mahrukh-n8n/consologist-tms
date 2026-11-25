@@ -9,7 +9,7 @@ export const Label = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <LabelPrimitive.Root
     ref={ref}
-    className={cn("text-[0.72rem] font-extrabold uppercase tracking-[0.12em] text-foreground", className)}
+    className={cn("block text-[0.72rem] font-extrabold uppercase tracking-[0.12em] text-foreground", className)}
     {...props}
   />
 ));

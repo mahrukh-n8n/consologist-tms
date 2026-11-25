@@ -79,7 +79,7 @@ export function TaskFiles({
       {driveConnected ? (
         <form ref={formRef} action={action} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="taskId" value={taskId} />
-          <Input ref={inputRef} name="file" type="file" required className="max-w-xs" aria-label="Attach a file" />
+          <Input compact ref={inputRef} name="file" type="file" required className="max-w-xs" aria-label="Attach a file" />
           <Button type="submit" size="sm" disabled={pending}>
             <Paperclip className="mr-1.5 size-4" />
             {pending ? "Uploading…" : "Attach"}

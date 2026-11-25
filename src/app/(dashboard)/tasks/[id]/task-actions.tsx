@@ -24,7 +24,7 @@ export function TagForm({ taskId, onAdded }: { taskId: number; onAdded?: () => v
         <Label htmlFor="tags">Add tags</Label>
         <TagInput id="tags" />
       </div>
-      <Button type="submit" size="sm" disabled={pending}>{pending ? "Adding…" : "Add tags"}</Button>
+      <Button type="submit" disabled={pending}>{pending ? "Adding…" : "Add tags"}</Button>
     </form>
   );
 }
@@ -46,7 +46,7 @@ export function DeleteTaskForm({ taskId, title }: { taskId: number; title: strin
         <Label htmlFor="reason">Delete “{title}”</Label>
         <Input id="reason" name="reason" placeholder="Reason (required)" required />
       </div>
-      <Button type="submit" variant="destructive" size="sm" disabled={pending}>{pending ? "Deleting…" : "Delete task"}</Button>
+      <Button type="submit" variant="destructive" disabled={pending}>{pending ? "Deleting…" : "Delete task"}</Button>
     </form>
   );
 }
@@ -65,7 +65,7 @@ export function DeleteCommentForm({ commentId, taskId, onDeleted }: { commentId:
     <form action={action} className="mt-1 flex flex-wrap items-end gap-2">
       <input type="hidden" name="commentId" value={commentId} />
       <input type="hidden" name="taskId" value={taskId} />
-      <Input id={`comment-reason-${commentId}`} name="reason" placeholder="Delete reason" className="h-7 w-40 text-xs" required />
+      <Input id={`comment-reason-${commentId}`} name="reason" placeholder="Delete reason" compact className="w-40" required />
       <Button id={`delete-comment-${commentId}`} type="submit" variant="ghost" size="sm" disabled={pending}>{pending ? "Deleting…" : "Delete comment"}</Button>
     </form>
   );

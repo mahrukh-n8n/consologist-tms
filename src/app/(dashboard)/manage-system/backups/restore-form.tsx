@@ -53,7 +53,7 @@ export function RestoreForm({ backupId }: { backupId: number }) {
         <form action={restoreAction} className="flex flex-wrap items-center gap-2">
           <input type="hidden" name="id" value={backupId} />
           <input type="hidden" name="password" value={password} />
-          <Input id={`confirm-${backupId}`} name="confirm" placeholder="Type RESTORE" className="h-8 w-36" />
+          <Input id={`confirm-${backupId}`} name="confirm" placeholder="Type RESTORE" compact className="w-36" />
           <Button id={`execute-${backupId}`} type="submit" variant="destructive" size="sm" disabled={restoring || !password}>
             {restoring ? "Restoring…" : "Restore"}
           </Button>

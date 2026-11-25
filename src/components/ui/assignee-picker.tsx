@@ -49,9 +49,8 @@ export function AssigneePicker({
           <button
             id={id}
             type="button"
-            className={compact
-              ? "flex min-h-8 w-full items-center justify-between gap-1 rounded-lg border border-border bg-card px-2 py-1 text-left text-xs font-semibold hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              : "flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border-2 border-ink bg-card px-3 py-2 text-left text-sm font-semibold shadow-[3px_3px_0_var(--ink)] transition hover:-translate-y-0.5 hover:shadow-[5px_5px_0_var(--ink)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"}
+            data-compact={compact}
+            className="block-input picker-trigger justify-between"
           >
             <span className="flex min-w-0 items-center gap-2">
               {compact && selected.length > 0 ? (
@@ -89,7 +88,8 @@ export function AssigneePicker({
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search name or email"
-                className="h-9 pl-8 text-sm shadow-none"
+                compact
+                className="pl-9"
                 aria-label="Search assignees"
               />
             </div>

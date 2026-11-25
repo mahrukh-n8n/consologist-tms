@@ -73,7 +73,7 @@ function DeleteList({ list }: { list: ArchivedList }) {
   return (
     <form action={action} className="flex flex-wrap items-end gap-2">
       <input type="hidden" name="listId" value={list.id} />
-      <Input name="reason" required placeholder="Delete reason" aria-label={`Delete reason for ${list.name}`} className="h-8 w-40 text-xs" />
+      <Input name="reason" required placeholder="Delete reason" aria-label={`Delete reason for ${list.name}`} compact className="w-40" />
       <Button type="submit" size="sm" variant="destructive" disabled={pending}>
         <Trash2 className="mr-1 size-3.5" /> Delete list
       </Button>

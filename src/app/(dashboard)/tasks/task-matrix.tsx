@@ -41,7 +41,7 @@ export function TaskMatrix({ rows, projects }: { rows: MatrixRow[]; projects: Ta
                       <article key={row.id} className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-sm">
                         <InlineTitle task={row} />
                         <p className="text-[11px] text-muted-foreground">{row.projectName} / {row.listName}</p>
-                        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
                           <InlineStatus task={row} />
                           <InlinePriority task={row} />
                           <InlineDue task={row} />

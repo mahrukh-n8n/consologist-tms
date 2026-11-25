@@ -76,10 +76,9 @@ export function TaskEditButton({
       <Button
         type="button"
         variant="ghost"
-        size="sm"
+        size={compact ? "icon-sm" : "sm"}
         onClick={() => setOpen(true)}
         aria-label={`Edit ${task.title}`}
-        className={compact ? "size-8 p-0" : undefined}
       >
         <Pencil className="size-3.5" />{compact ? null : "Edit"}
       </Button>

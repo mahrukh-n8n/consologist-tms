@@ -54,7 +54,7 @@ export function TaskBoard({
                 return (
                   <article key={task.id} className="space-y-2 rounded-xl border border-border bg-card p-3 shadow-sm">
                     <InlineTitle task={inline} />
-                    <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                    <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2">
                       <InlineStatus task={inline} />
                       <InlinePriority task={inline} />
                       <InlineDue task={inline} />

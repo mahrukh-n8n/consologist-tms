@@ -120,19 +120,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </div>
               <div className="flex items-center gap-2">
                 <ThemeToggle />
-                <form action={switchWorkspaceAction} className="hidden items-center gap-1 sm:flex">
+                <form action={switchWorkspaceAction} className="hidden items-center gap-2 sm:flex">
                   <select
                     id="workspace-select"
                     name="companyId"
                     defaultValue={String(company.id)}
                     aria-label="Switch workspace"
-                    className="h-9 rounded-lg border-2 border-ink bg-card px-2 text-xs font-bold shadow-[2px_2px_0_var(--ink)]"
+                    data-compact="true"
+                    className="block-input max-w-48 font-semibold"
                   >
                     {memberships.map((membership) => (
                       <option key={membership.company.id} value={membership.company.id}>{membership.company.name}</option>
                     ))}
                   </select>
-                  <button id="workspace-switch" type="submit" className="text-xs font-extrabold uppercase underline">Switch</button>
+                  <button id="workspace-switch" type="submit" className="h-control-sm px-1 text-xs font-extrabold uppercase underline">Switch</button>
                 </form>
                 <span className="hidden size-9 items-center justify-center rounded-full border-2 border-ink bg-accent text-xs font-black uppercase sm:flex" title={user.email}>
                   {(user.fullName ?? user.email).split(/\s+/).map((part) => part[0]).join("").slice(0, 2)}

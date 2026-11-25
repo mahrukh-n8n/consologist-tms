@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect } from "react";
 import { Archive, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { notify } from "@/lib/notifications/client";
 import { archiveTaskListAction, deleteTaskListAction, type BulkActionState, type ListActionState } from "./actions";
 
@@ -14,14 +16,15 @@ export function ArchiveListButton({ listId, name }: { listId: number; name: stri
   return (
     <form action={action}>
       <input type="hidden" name="listId" value={listId} />
-      <button
+      <Button
+        size="sm"
+        variant="ghost"
         id={`archive-list-${listId}`}
         type="submit"
         disabled={pending}
-        className="inline-flex items-center gap-1 text-[11px] font-bold uppercase text-muted-foreground hover:text-destructive disabled:opacity-50"
       >
         <Archive className="size-3.5" /> {pending ? "Archiving…" : "Archive"}
-      </button>
+      </Button>
     </form>
   );
 }
@@ -33,16 +36,18 @@ export function DeleteListButton({ listId, name }: { listId: number; name: strin
     if (state.success) notify.success("List deleted", "An immutable audit snapshot was recorded.", `delete-list-${listId}`);
   }, [state, listId]);
   return (
-    <form action={action} className="flex flex-wrap items-end gap-1">
+    <form action={action} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="listId" value={listId} />
-      <input name="reason" required placeholder="Delete reason" aria-label={`Delete reason for ${name}`} className="h-7 w-36 rounded-md border border-border bg-card px-2 text-xs" />
-      <button
+      <Input compact name="reason" required placeholder="Delete reason" aria-label={`Delete reason for ${name}`} className="w-36" />
+      <Button
+        size="sm"
+        variant="ghost"
         type="submit"
         disabled={pending}
-        className="inline-flex items-center gap-1 text-[11px] font-bold uppercase text-destructive disabled:opacity-50"
+        className="text-destructive"
       >
         <Trash2 className="size-3.5" /> {pending ? "Deleting…" : "Delete"}
-      </button>
+      </Button>
     </form>
   );
 }

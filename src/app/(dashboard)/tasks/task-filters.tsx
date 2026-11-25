@@ -111,7 +111,7 @@ export function TaskFilters({
         {savedId ? (
           <form action={deleteSavedFilterAction}>
             <input type="hidden" name="savedFilterId" value={savedId} />
-            <Button type="submit" variant="outline" size="sm">Delete saved</Button>
+            <Button type="submit" variant="outline">Delete saved</Button>
           </form>
         ) : null}
         <form action={saveAction} className="flex flex-1 flex-wrap items-end gap-2">
@@ -120,7 +120,7 @@ export function TaskFilters({
             <Label htmlFor="filter-save-name">Save current filters as</Label>
             <Input id="filter-save-name" name="title" value={filterName} onChange={(event) => setFilterName(event.target.value)} placeholder="e.g. My overdue tasks" />
           </div>
-          <Button type="submit" variant="outline" size="sm" disabled={saving || !filterName.trim()}>
+          <Button type="submit" variant="outline" disabled={saving || !filterName.trim()}>
             {saving ? "Saving…" : "Save filter"}
           </Button>
         </form>

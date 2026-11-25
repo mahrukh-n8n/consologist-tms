@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { MarkdownField } from "@/components/documents/markdown-field";
@@ -64,12 +65,11 @@ export function NotifyForm({
         ) : field.kind === "textarea" ? (
           <div key={field.name} className="w-full space-y-1">
             <Label htmlFor={`${actionId}-${field.name}`}>{field.label}</Label>
-            <textarea
+            <Textarea
               id={`${actionId}-${field.name}`}
               name={field.name}
               required={field.required}
               placeholder={field.placeholder}
-              className="min-h-20 w-full rounded-md border bg-background px-3 py-2 text-sm"
             />
           </div>
         ) : field.kind === "hidden" ? (

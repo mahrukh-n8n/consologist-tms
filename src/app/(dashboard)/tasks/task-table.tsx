@@ -129,7 +129,7 @@ export function TaskTable({
                 <tr key={row.id}>
                   <td className="min-w-56"><InlineTitle task={row} /></td>
                   {visible.map((column) => (
-                    <td key={column.key} className="align-top">
+                    <td key={column.key} className="align-middle">
                       {column.key === "status" ? <InlineStatus task={row} /> : null}
                       {column.key === "assignees" ? <InlineAssignees task={row} members={members} /> : null}
                       {column.key === "tags" ? <InlineTags task={row} /> : null}

@@ -129,40 +129,43 @@ export function TaskListView({
   return (
     <div className="space-y-4">
       {selectedIds.length > 0 ? (
-        <div className="block-card flex flex-wrap items-end gap-2 border-2 border-ink p-3">
-          <span className="chip chip-purple">{selectedIds.length} selected</span>
+        <div className="block-card grid grid-cols-2 items-center gap-2 p-3 sm:flex sm:flex-wrap">
+          <span className="chip chip-purple justify-self-start">{selectedIds.length} selected</span>
+          <Button size="sm" className="justify-self-end" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
           <Button size="sm" variant="outline" disabled={busy} onClick={() => runBulk({ taskIds: selectedIds, action: "archive" }, "Tasks archived")}>
-            <Archive className="mr-1 size-3.5" /> Archive
+            <Archive className="size-3.5" /> Archive
           </Button>
           <Button size="sm" variant="outline" disabled={busy} onClick={() => runBulk({ taskIds: selectedIds, action: "unarchive" }, "Tasks restored")}>
-            <ArchiveRestore className="mr-1 size-3.5" /> Unarchive
+            <ArchiveRestore className="size-3.5" /> Unarchive
           </Button>
-          <div className="w-52">
+          <div className="col-span-full flex w-full items-center gap-2 sm:w-auto">
             <SearchableSelect
+              compact
+              className="min-w-0 flex-1 sm:w-44 sm:flex-none"
+              placeholder="Move to list…"
               id="bulk-move-list"
               value={moveListId}
               onChange={setMoveListId}
               options={[{ value: "", label: "Move to list…" }, ...lists.map((list) => ({ value: String(list.id), label: `${list.projectName} / ${list.name}` }))]}
             />
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={busy || !moveListId}
+              onClick={() => runBulk({ taskIds: selectedIds, action: "move", listId: Number(moveListId), parentId: null }, "Tasks moved")}
+            >
+              Move
+            </Button>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy || !moveListId}
-            onClick={() => runBulk({ taskIds: selectedIds, action: "move", listId: Number(moveListId), parentId: null }, "Tasks moved")}
-          >
-            Move
-          </Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => runBulk({ taskIds: selectedIds, action: "move", parentId: null }, "Parent cleared")}>
+          <Button size="sm" variant="outline" className="col-span-full" disabled={busy} onClick={() => runBulk({ taskIds: selectedIds, action: "move", parentId: null }, "Parent cleared")}>
             Detach parent
           </Button>
-          <div className="w-44">
-            <Input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Delete reason" aria-label="Delete reason" />
+          <div className="col-span-full flex w-full items-center gap-2 sm:w-auto">
+            <Input compact className="flex-1 sm:w-36 sm:flex-none" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Delete reason" aria-label="Delete reason" />
+            <Button size="sm" variant="destructive" disabled={busy || !reason.trim()} onClick={deleteSelected}>
+              <Trash2 className="size-3.5" /> Delete
+            </Button>
           </div>
-          <Button size="sm" variant="destructive" disabled={busy || !reason.trim()} onClick={deleteSelected}>
-            <Trash2 className="mr-1 size-3.5" /> Delete
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>Clear</Button>
         </div>
       ) : null}
 
@@ -207,12 +210,12 @@ export function TaskListView({
                         className="block-card space-y-2 p-3"
                       >
                         <div className="flex items-center justify-between gap-2">
-                          <label className="flex items-center gap-2">
+                          <label className="flex min-w-0 items-center gap-2">
                             <input type="checkbox" checked={selected.has(task.id)} onChange={() => toggle(task.id)} aria-label={`Select ${task.title}`} />
                             <InlineTitle task={inline} scope="m" />
                           </label>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,8rem),1fr))] gap-2 text-xs [&>div]:space-y-1">
                           <div><p className="eyebrow text-muted-foreground">Status</p><InlineStatus task={inline} /></div>
                           <div><p className="eyebrow text-muted-foreground">Priority</p><InlinePriority task={inline} /></div>
                           <div><p className="eyebrow text-muted-foreground">Due</p><InlineDue task={inline} /></div>

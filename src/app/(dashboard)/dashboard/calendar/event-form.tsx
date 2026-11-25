@@ -22,13 +22,13 @@ export function EventCreateForm({ projects }: { projects: { id: number; name: st
   }, [state]);
   if (projects.length === 0) return <p className="text-sm text-muted-foreground">Create a project first.</p>;
   return (
-    <form ref={ref} action={action} className="grid gap-3 lg:grid-cols-4">
+    <form ref={ref} action={action} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <div className="space-y-1.5">
         <Label htmlFor="create-event-projectId">Project</Label>
         <SearchableSelect id="create-event-projectId" noClear value={projectId} onChange={setProjectId} options={projects.map((p) => ({ value: String(p.id), label: p.name }))} />
         <input type="hidden" name="projectId" value={projectId} />
       </div>
-      <div className="space-y-1.5 lg:col-span-2">
+      <div className="space-y-1.5">
         <Label htmlFor="create-event-title">Title</Label>
         <Input id="create-event-title" name="title" required placeholder="e.g. Sprint review" />
       </div>
@@ -40,7 +40,7 @@ export function EventCreateForm({ projects }: { projects: { id: number; name: st
         <Label htmlFor="create-event-endAt">Ends</Label>
         <DateTimePicker id="create-event-endAt" name="endAt" placeholder="Optional end" />
       </div>
-      <div className="flex items-end lg:col-span-4">
+      <div className="flex items-end col-span-full">
         <Button type="submit" variant="accent" disabled={pending}><CalendarPlus className="size-4" />{pending ? "Adding…" : "Add event"}</Button>
       </div>
     </form>

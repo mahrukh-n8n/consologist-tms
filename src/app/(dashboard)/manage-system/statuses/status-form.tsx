@@ -23,7 +23,7 @@ export function StatusForm() {
       </div>
       <div className="space-y-1">
         <Label htmlFor="color">Color</Label>
-        <Input id="color" name="color" type="color" defaultValue="#4a86f7" className="h-10 w-16 p-1" />
+        <Input id="color" name="color" type="color" defaultValue="#4a86f7" className="w-16 p-1" />
       </div>
       <Button type="submit" disabled={pending}>{pending ? "Creating…" : "Create status"}</Button>
     </form>

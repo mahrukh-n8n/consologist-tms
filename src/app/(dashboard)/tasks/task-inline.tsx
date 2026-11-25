@@ -4,6 +4,7 @@ import { useCallback, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ExternalLink, Loader2, Pencil, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { BlockSelect } from "@/components/ui/block-select";
 import { AssigneePicker, type AssigneeOption } from "@/components/ui/assignee-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
@@ -95,8 +96,9 @@ export function InlineTitle({ task, href = true, scope = "" }: { task: InlineTas
 
   if (editing) {
     return (
-      <div className="flex min-w-0 items-center gap-1">
-        <input
+      <div className="flex min-w-0 items-center gap-1 [td_&]:max-w-80">
+        <Input
+          compact
           autoFocus
           aria-label={`Title for task ${task.id}${scope}`}
           value={value}
@@ -116,7 +118,7 @@ export function InlineTitle({ task, href = true, scope = "" }: { task: InlineTas
             }
           }}
           className={cn(
-            "min-w-0 flex-1 rounded-md border border-border bg-card px-1 py-0.5 text-sm font-bold focus:outline-none",
+            "min-w-0 flex-1 font-bold",
             pending && "opacity-70"
           )}
         />
@@ -126,12 +128,12 @@ export function InlineTitle({ task, href = true, scope = "" }: { task: InlineTas
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-1">
+    <div className="flex min-w-0 items-center gap-1 [td_&]:max-w-80">
       <button
         type="button"
         onClick={() => openTask(task.id)}
-        title="Open task details"
-        className="min-w-0 flex-1 truncate rounded-md border border-transparent px-1 py-0.5 text-left text-sm font-bold hover:border-border hover:bg-muted focus-visible:border-border focus-visible:bg-card focus-visible:outline-none"
+        title={value}
+        className="h-control-sm min-w-0 flex-1 truncate rounded-lg border border-transparent px-2.5 text-left text-sm font-bold hover:border-border hover:bg-muted focus-visible:border-border focus-visible:bg-card focus-visible:outline-none"
       >
         {value}
       </button>
@@ -140,12 +142,12 @@ export function InlineTitle({ task, href = true, scope = "" }: { task: InlineTas
         onClick={() => setEditing(true)}
         aria-label={`Rename task ${task.title}`}
         title="Rename inline"
-        className="shrink-0 text-muted-foreground hover:text-foreground"
+        className="inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
       >
         <Pencil className="size-3" />
       </button>
       {href ? (
-        <a href={`/tasks/${task.id}`} target="_blank" rel="noreferrer" aria-label={`Open ${task.title} in a new tab`} className="shrink-0 text-muted-foreground hover:text-foreground">
+        <a href={`/tasks/${task.id}`} target="_blank" rel="noreferrer" aria-label={`Open ${task.title} in a new tab`} className="inline-flex size-6 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground">
           <ExternalLink className="size-3.5" />
         </a>
       ) : null}
@@ -214,7 +216,7 @@ export function InlineAssignees({ task, members, scope = "" }: { task: InlineTas
   const { save } = useTaskPatch(task.id);
   const [value, setValue] = useState<number[]>(task.assigneeIds);
   return (
-    <div className="min-w-40">
+    <div className="min-w-0 [td_&]:w-36">
       <AssigneePicker
         compact
         id={`inline-assignees-${task.id}${scope}`}
@@ -254,7 +256,7 @@ export function InlineDue({ task, scope = "" }: { task: InlineTask; scope?: stri
   const { save } = useTaskPatch(task.id);
   const [value, setValue] = useState<string | null>(task.dueAt);
   return (
-    <div className="min-w-36">
+    <div className="min-w-0 [td_&]:min-w-32">
       <DateTimePicker
         compact
         name={`due-${task.id}${scope}`}
@@ -277,7 +279,8 @@ export function InlineProgress({ task, scope = "" }: { task: InlineTask; scope?:
   const [value, setValue] = useState(String(task.progress));
   return (
     <div className="flex items-center gap-1">
-      <input
+      <Input
+        compact
         aria-label={`Progress for task ${task.id}${scope}`}
         type="number"
         min={0}
@@ -292,7 +295,7 @@ export function InlineProgress({ task, scope = "" }: { task: InlineTask; scope?:
           const ok = await save({ progress: next });
           if (!ok) setValue(String(task.progress));
         }}
-        className="w-16 rounded-md border border-border bg-card px-1.5 py-0.5 text-xs"
+        className="w-16"
       />
       <span className="text-xs text-muted-foreground">%</span>
       {pending ? <Loader2 className="size-3 animate-spin text-muted-foreground" /> : null}
@@ -324,7 +327,7 @@ export function InlineTags({ task, scope = "" }: { task: InlineTask; scope?: str
   }
 
   return (
-    <div className="flex min-w-40 flex-wrap items-center gap-1">
+    <div className="flex min-w-0 flex-wrap items-center gap-2 [td_&]:min-w-24">
       {tags.map((tag) => (
         <span key={tag} className="chip chip-cyan !text-[10px]">
           {tag}
@@ -333,7 +336,8 @@ export function InlineTags({ task, scope = "" }: { task: InlineTask; scope?: str
           </button>
         </span>
       ))}
-      <input
+      <Input
+        compact
         aria-label={`Add tag to task ${task.id}${scope}`}
         value={draft}
         onChange={(event) => setDraft(event.target.value)}
@@ -345,7 +349,7 @@ export function InlineTags({ task, scope = "" }: { task: InlineTask; scope?: str
           }
         }}
         placeholder={tags.length === 0 ? "Add tag" : "+"}
-        className="w-20 rounded border border-transparent bg-transparent px-1 py-0.5 text-[11px] hover:border-border focus:border-border focus:bg-card focus:outline-none"
+        className="flex-1 basis-24"
       />
     </div>
   );
@@ -356,6 +360,7 @@ export function InlineProject({ task, projects }: { task: InlineTask; projects: 
   const [value, setValue] = useState(String(task.projectId));
   return (
     <SearchableSelect
+      compact
       id={`inline-project-${task.id}`}
       noClear
       value={value}
@@ -376,6 +381,7 @@ export function InlineList({ task, lists }: { task: InlineTask; lists: { id: num
   const [value, setValue] = useState(String(task.listId));
   return (
     <SearchableSelect
+      compact
       id={`inline-list-${task.id}`}
       noClear
       value={value}
