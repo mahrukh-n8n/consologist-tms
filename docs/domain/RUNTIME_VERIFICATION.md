@@ -222,3 +222,7 @@ The app is a personal tool: the `Plan` enum/column, feature gates, plan page and
 | Inline progress | ✅ 40% persisted |
 | Inline assignees/due/priority/custom status/project/list | ✅ same components in list, board, table |
 | Empty lists | ✅ compact heading only |
+
+### Document list management (2026-11-25)
+
+A disposable PostgreSQL check exercised the MCP archive handler and shared queries, concurrent archive retries, restore, workspace and project scope, retained Markdown/version/attachment, and audited deletion with cascading attachment removal. A separate browser check mounted the row controls with a test action transport and exercised archive, restore, cancel, required reason and confirm. The full Next.js browser run timed out during local compilation.

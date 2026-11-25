@@ -24,7 +24,7 @@ import { assignTemplate } from "@/modules/auth-rbac/services/assignment-service"
 import { uploadWorkspaceFile } from "@/lib/files/service";
 import { markAllAsRead } from "@/lib/notifications/service";
 import { gkUpdateTaskDetails } from "@/lib/mutations/tasks";
-import { deleteDocumentWithAudit, gkAddDocumentAttachment, gkCreateDocument, gkDeleteDocumentAttachment, gkUpdateDocument } from "@/lib/mutations/documents";
+import { deleteDocumentWithAudit, gkAddDocumentAttachment, gkCreateDocument, gkDeleteDocumentAttachment, gkSetDocumentArchived, gkUpdateDocument } from "@/lib/mutations/documents";
 import { archiveTaskList, deleteTaskListWithAudit, gkCreateTaskList, renameTaskList } from "@/lib/tasks/lists";
 
 type Db = PrismaClient;
@@ -337,6 +337,10 @@ const HANDLERS: Record<string, Handler> = {
   ProjectDocument: executeDocumentCreate,
   "documents.create": executeDocumentCreate,
   "documents.update": executeDocumentUpdate,
+  "documents.set_archived": async (db, payload, submitterId, companyId) => {
+    const doc = await gkSetDocumentArchived(db, companyId, submitterId, payload);
+    return { entityId: doc.id, result: doc };
+  },
   "documents.delete": executeDocumentDelete,
   "documents.add_attachment": executeDocumentAttachment,
   "documents.delete_attachment": executeDocumentAttachmentDelete,

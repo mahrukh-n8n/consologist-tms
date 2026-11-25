@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input";
 import { notify } from "@/lib/notifications/client";
 import {
   deleteAttachmentAction,
-  deleteDocumentAction,
+  refreshDocumentAction,
   updateDocumentAction,
   uploadAttachmentAction,
 } from "@/app/(dashboard)/documents/actions";
+import { DeleteDocumentButton } from "./document-actions";
+import { MarkdownView } from "./markdown-view";
 import { DocumentOutline, useDocumentOutline } from "./outline";
 import { VoiceNoteRecorder } from "./voice-note-recorder";
 
@@ -39,25 +41,36 @@ export type DocumentData = {
   attachments: DocumentAttachmentMeta[];
 };
 
-export function DocumentButton({ document, compact = false }: { document: DocumentData; compact?: boolean }) {
-  const [open, setOpen] = useState(false);
+export function DocumentButton({ id, title, canManage }: { id: number; title: string; canManage: boolean }) {
+  const [document, setDocument] = useState<DocumentData | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function open() {
+    startTransition(async () => {
+      try {
+        const doc = await refreshDocumentAction(id);
+        if (!doc) throw new Error("Document not found.");
+        setDocument({
+          id: doc.id, title: doc.title, projectName: doc.project.name, contentMarkdown: doc.contentMarkdown, version: doc.version,
+          attachments: doc.attachments.map((attachment) => ({ ...attachment, createdAt: attachment.createdAt.toISOString() })),
+        });
+      } catch (error) {
+        notify.error("Document could not be opened", error instanceof Error ? error.message : "Try again.", `doc-open-${id}`);
+      }
+    });
+  }
+
   return (
     <>
-      <Button
-        type="button"
-        variant={compact ? "ghost" : "outline"}
-        size={compact ? "icon-sm" : "sm"}
-        onClick={() => setOpen(true)}
-        aria-label={`Open document ${document.title}`}
-      >
-        <FileText className="size-4" />{compact ? null : "Open"}
+      <Button variant="outline" size="sm" onClick={open} disabled={pending} aria-label={`Open document ${title}`}>
+        <FileText />{pending ? "Opening…" : "Open"}
       </Button>
-      {open ? <DocumentDrawer document={document} onClose={() => setOpen(false)} /> : null}
+      {document && <DocumentDrawer document={document} canManage={canManage} onClose={() => setDocument(null)} />}
     </>
   );
 }
 
-function DocumentDrawer({ document, onClose }: { document: DocumentData; onClose: () => void }) {
+function DocumentDrawer({ document, canManage, onClose }: { document: DocumentData; canManage: boolean; onClose: () => void }) {
   const router = useRouter();
   const [title, setTitle] = useState(document.title);
   const [markdown, setMarkdown] = useState(document.contentMarkdown);
@@ -66,19 +79,19 @@ function DocumentDrawer({ document, onClose }: { document: DocumentData; onClose
   const [outlineOpen, setOutlineOpen] = useState(true);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [fullscreen, setFullscreen] = useState(false);
-  const [reason, setReason] = useState("");
   const [pending, startTransition] = useTransition();
   const editorHost = useRef<HTMLDivElement>(null);
   const headings = useDocumentOutline(editorHost, outlineOpen);
 
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !event.defaultPrevented) onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
   function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canManage) return;
     const data = new FormData(event.currentTarget);
     startTransition(async () => {
       const result = await updateDocumentAction({ success: false }, data);
@@ -89,22 +102,6 @@ function DocumentDrawer({ document, onClose }: { document: DocumentData; onClose
       if (result.version) setVersion(result.version);
       notify.success("Document saved", `Version ${result.version ?? version + 1}`, `doc-save-${document.id}`);
       router.refresh();
-    });
-  }
-
-  function remove() {
-    const data = new FormData();
-    data.set("documentId", String(document.id));
-    data.set("reason", reason);
-    startTransition(async () => {
-      const result = await deleteDocumentAction({ success: false }, data);
-      if (!result.success) {
-        notify.error("Document not deleted", result.error, `doc-delete-${document.id}`);
-        return;
-      }
-      notify.success("Document deleted", "An immutable audit was recorded.", `doc-delete-${document.id}`);
-      router.refresh();
-      onClose();
     });
   }
 
@@ -142,15 +139,17 @@ function DocumentDrawer({ document, onClose }: { document: DocumentData; onClose
       <button type="button" className="flex-1 cursor-default" aria-label="Close document" onClick={onClose} />
       <aside className={`flex h-full w-full flex-col border-l border-border bg-background shadow-2xl ${fullscreen ? "max-w-none" : "max-w-4xl"}`}>
         <header className="flex flex-wrap items-center gap-2 border-b border-border p-3">
-          <Input value={title} onChange={(event) => setTitle(event.target.value)} aria-label="Document title" compact className="min-w-36 flex-1 font-bold" />
+          <Input readOnly={!canManage} value={title} onChange={(event) => setTitle(event.target.value)} aria-label="Document title" compact className="min-w-36 flex-1 font-bold" />
           <Button type="button" variant="outline" size="sm" onClick={() => setOutlineOpen((value) => !value)} aria-pressed={outlineOpen}>
             <ListTree className="size-4" /> Outline
           </Button>
-          <VoiceNoteRecorder onRecorded={upload} disabled={pending} />
-          <label className="inline-flex h-control-sm cursor-pointer items-center gap-1 rounded-md border border-border px-2 text-xs font-bold uppercase">
-            <Paperclip className="size-3.5" /> Attach
-            <input type="file" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) upload(file); }} />
-          </label>
+          {canManage && <>
+            <VoiceNoteRecorder onRecorded={upload} disabled={pending} />
+            <label className="inline-flex h-control-sm cursor-pointer items-center gap-1 rounded-md border border-border px-2 text-xs font-bold uppercase">
+              <Paperclip className="size-3.5" /> Attach
+              <input type="file" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) upload(file); }} />
+            </label>
+          </>}
           <Button type="button" variant="outline" size="icon-sm" onClick={() => setFullscreen((value) => !value)} aria-label={fullscreen ? "Exit full screen" : "Full screen"}>
             {fullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
           </Button>
@@ -171,18 +170,18 @@ function DocumentDrawer({ document, onClose }: { document: DocumentData; onClose
               <input type="hidden" name="contentMarkdown" value={markdown} />
               <input type="hidden" name="version" value={version} />
               <div ref={editorHost} className="min-h-0 flex-1 overflow-y-auto p-3">
-                <MarkdownEditor markdown={markdown} onChange={setMarkdown} minHeight={420} />
+                {canManage ? <MarkdownEditor markdown={markdown} onChange={setMarkdown} minHeight={420} /> : <MarkdownView markdown={markdown} />}
               </div>
               <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border p-3">
                 <span className="text-xs text-muted-foreground">{document.projectName} · v{version} · {markdown.length.toLocaleString()} chars</span>
-                <Button type="submit" disabled={pending}><Save className="size-4" /> {pending ? "Saving…" : "Save"}</Button>
+                {canManage && <Button type="submit" disabled={pending}><Save className="size-4" /> {pending ? "Saving…" : "Save"}</Button>}
               </footer>
             </form>
 
             <section className="max-h-56 shrink-0 overflow-y-auto border-t border-border p-3">
               <p className="eyebrow mb-2 text-muted-foreground">Attachments ({attachments.length})</p>
               {attachments.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Record a voice note or attach a file.</p>
+                <p className="text-xs text-muted-foreground">{canManage ? "Record a voice note or attach a file." : "No attachments."}</p>
               ) : (
                 <div className="space-y-2">
                   {attachments.map((attachment) => (
@@ -194,22 +193,14 @@ function DocumentDrawer({ document, onClose }: { document: DocumentData; onClose
                       ) : (
                         <a className="text-primary underline" href={`/api/documents/attachments/${attachment.id}`} target="_blank" rel="noreferrer">Open</a>
                       )}
-                      <Button type="button" variant="ghost" size="sm" className="ml-auto" onClick={() => removeAttachment(attachment.id, attachment.fileName)} aria-label={`Delete ${attachment.fileName}`}><Trash2 className="size-3.5" /></Button>
+                      {canManage && <Button type="button" variant="ghost" size="sm" className="ml-auto" onClick={() => removeAttachment(attachment.id, attachment.fileName)} aria-label={`Delete ${attachment.fileName}`}><Trash2 className="size-3.5" /></Button>}
                     </div>
                   ))}
                 </div>
               )}
             </section>
 
-            <details className="border-t border-border p-3">
-              <summary className="cursor-pointer text-xs font-bold uppercase text-destructive">Delete document</summary>
-              <div className="mt-2 flex flex-wrap items-end gap-2">
-                <Input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Reason (required)" compact className="w-64" />
-                <Button type="button" variant="destructive" size="sm" disabled={pending || !reason.trim()} onClick={remove}>
-                  {pending ? "Deleting…" : "Delete"}
-                </Button>
-              </div>
-            </details>
+            {canManage && <div className="border-t border-border p-3"><DeleteDocumentButton document={document} onDeleted={onClose} /></div>}
           </div>
         </div>
       </aside>

@@ -3,12 +3,16 @@ import { z } from "zod";
 export const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
 export const listDocumentsSchema = z.object({
-  projectId: z.coerce.number().int().positive().optional(),
+  archived: z.boolean().optional(),
+  afterId: z.coerce.number().int().positive().max(2147483647).optional(),
+  projectId: z.coerce.number().int().positive().max(2147483647).optional(),
 });
 
 export const getDocumentSchema = z.object({
   documentId: z.coerce.number().int().positive(),
 });
+
+export const setDocumentArchivedSchema = getDocumentSchema.extend({ archived: z.boolean() });
 
 export const createDocumentSchema = z.object({
   projectId: z.coerce.number().int().positive(),

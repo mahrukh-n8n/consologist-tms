@@ -643,6 +643,7 @@ model ProjectDocument {
   id              Int      @id @default(autoincrement())
   projectId       Int      @map("project_id")
   title           String
+  archivedAt      DateTime? @map("archived_at")
   contentMarkdown String   @default("") @map("content_markdown")
   version         Int      @default(1)
   createdById     Int      @map("created_by_id")

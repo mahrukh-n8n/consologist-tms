@@ -11,7 +11,8 @@ backups
 uploads
 coverage
 *.log
-docs
+docs/*
+!docs/htmldocs/
 .claude
 .planning
 *.md

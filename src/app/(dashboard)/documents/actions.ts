@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireCompany } from "@/lib/company/require-company";
 import { prisma } from "@/lib/db";
-import { requirePageWrite, requireWriteGate } from "@/modules/auth-rbac/middleware/page-access";
+import { requirePageAccess, requirePageWrite, requireWriteGate } from "@/modules/auth-rbac/middleware/page-access";
 import {
   attachmentSchema,
   createDocumentSchema,
@@ -16,6 +16,7 @@ import {
   gkAddDocumentAttachment,
   gkCreateDocument,
   gkDeleteDocumentAttachment,
+  gkSetDocumentArchived,
   gkUpdateDocument,
 } from "@/lib/mutations/documents";
 import { getDocument } from "@/lib/documents/query";
@@ -61,6 +62,16 @@ export async function updateDocumentAction(_prev: DocumentState, formData: FormD
     revalidatePath("/documents");
     return { success: true, version: updated.version };
   } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Save failed." }; }
+}
+
+export async function setDocumentArchivedAction(documentId: number, archived: boolean): Promise<DocumentState> {
+  const { user, company } = await requireCompany();
+  try {
+    await requirePageWrite(user.id, company.id, "documents");
+    await gkSetDocumentArchived(prisma, company.id, user.id, { documentId, archived });
+    revalidatePath("/documents");
+    return { success: true };
+  } catch (error) { return { success: false, error: error instanceof Error ? error.message : "Document update failed." }; }
 }
 
 export async function deleteDocumentAction(_prev: DocumentState, formData: FormData): Promise<DocumentState> {
@@ -119,6 +130,7 @@ export async function deleteAttachmentAction(_prev: AttachmentState, formData: F
 
 export async function refreshDocumentAction(documentId: number) {
   const { user, company } = await requireCompany();
+  await requirePageAccess(user.id, company.id, "documents");
   const doc = await getDocument(prisma, company.id, documentId);
   if (!doc) return null;
   await assertProjectAccess(prisma, company.id, user.id, doc.projectId);

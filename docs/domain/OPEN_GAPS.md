@@ -52,3 +52,5 @@ Last checked: 2026-11-19 (post-fix pass). Severity is acceptance impact, not eff
 ## Acceptance Statement
 
 `review-required:` code-level gaps are resolved. Personal edition has no tiers or billing. Runtime verification now covers GUI auth/tasks/comments/tags/approvals/backups/restore/schedule, MCP stdio reads and writes, cron and Resend. Remaining blockers: GAP-R10 (Drive OAuth redirect URI) and cross-database restore rehearsal. See `RUNTIME_VERIFICATION.md`.
+
+The document lifecycle and row controls were verified separately. A full browser pass through the authenticated Documents page is still pending after a local compilation timeout. See [runtime verification](RUNTIME_VERIFICATION.md).

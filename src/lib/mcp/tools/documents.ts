@@ -6,6 +6,7 @@ import {
   deleteDocumentSchema,
   getDocumentSchema,
   listDocumentsSchema,
+  setDocumentArchivedSchema,
   updateDocumentSchema,
 } from "@/lib/documents/schema";
 import { getDocument, listDocuments } from "@/lib/documents/query";
@@ -15,6 +16,7 @@ import {
   gkCreateDocument,
   gkDeleteDocumentAttachment,
   gkUpdateDocument,
+  gkSetDocumentArchived,
 } from "@/lib/mutations/documents";
 import { assertProjectAccess, canSeeAllProjects } from "@/lib/projects/access";
 import { commitResult, dataResult } from "@/modules/mcp/utils/serialize";
@@ -22,14 +24,14 @@ import { commitResult, dataResult } from "@/modules/mcp/utils/serialize";
 export const documentTools: McpToolDefinition[] = [
   {
     name: "documents.list",
-    description: "List project documents with attachment metadata.",
+    description: "List active project documents or pass archived=true for archived documents. Continue after the last document with afterId.",
     inputSchema: listDocumentsSchema,
     requiredPageKey: "documents",
     accessLevel: "READ",
     async handler(ctx, input) {
-      const projectId = (input as { projectId?: number }).projectId;
+      const filters = listDocumentsSchema.parse(input);
       const seeAll = await canSeeAllProjects(ctx.db, ctx.userId, ctx.companyId);
-      return dataResult({ documents: await listDocuments(ctx.db, ctx.companyId, projectId, seeAll ? undefined : ctx.userId) });
+      return dataResult({ documents: await listDocuments(ctx.db, ctx.companyId, filters, seeAll ? undefined : ctx.userId) });
     },
   },
   {
@@ -66,6 +68,16 @@ export const documentTools: McpToolDefinition[] = [
     async handler(ctx, input) {
       const doc = await gkUpdateDocument(ctx.db, ctx.companyId, ctx.userId, input as never);
       return commitResult(doc);
+    },
+  },
+  {
+    name: "documents.set_archived",
+    description: "Archive a document or restore it to the active list. Its content and attachments are preserved.",
+    inputSchema: setDocumentArchivedSchema,
+    requiredPageKey: "documents",
+    accessLevel: "WRITE",
+    async handler(ctx, input) {
+      return commitResult(await gkSetDocumentArchived(ctx.db, ctx.companyId, ctx.userId, input));
     },
   },
   {

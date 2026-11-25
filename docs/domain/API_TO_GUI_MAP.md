@@ -146,3 +146,11 @@ Saving or forwarding alone is not utility. Secrets, raw MCP keys, session tokens
 - [ ] High-stakes acceptance complete; GAP-04/05/07 block.
 
 `review-required: API/action inventory and parity mapping ready for acceptance; runtime and three blocking gaps remain.`
+
+### Document list actions
+
+| GUI | MCP | Shared behavior |
+|---|---|---|
+| Active / Archived, Next page | `documents.list` with `archived`, optional `projectId` and `afterId` | Workspace/project visibility, latest update first, ID tie-breaker |
+| Archive / Restore | `documents.set_archived` with `documentId`, `archived` | Updates the archive timestamp and audits each transition |
+| Delete → reason → confirm | `documents.delete` | Existing audited deletion gatekeeper removes the document and attachments |

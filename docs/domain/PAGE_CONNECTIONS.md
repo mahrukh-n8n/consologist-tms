@@ -118,3 +118,5 @@ flowchart TD
 - Nav inventory generated from `nav-sections.ts` (18 items).
 - Cross-check performed by comparing nav hrefs to route filenames; one missing route, one duplicate pageKey.
 - No browser runtime test was run.
+
+The Documents page links to its archived list at `/documents?archived=1`. Both lists preserve the project filter during paging and open the same document drawer. Archive, Restore and Delete refresh list membership. The help link opens `/htmldocs/documents.html`.

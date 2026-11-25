@@ -102,3 +102,5 @@ Everything outside this lane is `reference-only` (captured Freedcamp evidence) o
 - High-stakes documents remain `review-required:` until reviewer/orchestrator acceptance.
 
 `review-required: domain flow, full inventory, and utility evidence ready for reviewer/orchestrator acceptance.`
+
+For document archive, restore and deletion, follow [page connections](PAGE_CONNECTIONS.md), [GUI/MCP mapping](API_TO_GUI_MAP.md) and [document lifecycles](ENTITY_LIFECYCLES.md).

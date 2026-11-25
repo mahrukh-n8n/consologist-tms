@@ -1,29 +1,53 @@
-import { FileText } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { listDocumentsSchema } from "@/lib/documents/schema";
+import { FileText, CircleHelp } from "lucide-react";
 import { requireCompany } from "@/lib/company/require-company";
 import { prisma } from "@/lib/db";
-import { listDocuments } from "@/lib/documents/query";
+import { DOCUMENT_PAGE_SIZE, listDocumentRows } from "@/lib/documents/query";
 import { canSeeAllProjects, projectVisibilityWhere } from "@/lib/projects/access";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { NotifyForm } from "@/components/ui/notify-form";
+import { AccessLevel, requirePageAccess, getPageApprovalRequired } from "@/modules/auth-rbac/middleware/page-access";
+import { ArchiveDocumentButton, DeleteDocumentButton } from "@/components/documents/document-actions";
+import { Button } from "@/components/ui/button";
 import { DocumentButton } from "@/components/documents/document-drawer";
 import { createDocumentAction } from "./actions";
 
 export default async function DocumentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ projectId?: string }>;
+  searchParams: Promise<{ projectId?: string; archived?: string; afterId?: string }>;
 }) {
   const { user, company } = await requireCompany();
-  const seeAll = await canSeeAllProjects(prisma, user.id, company.id);
-  const projectId = Number((await searchParams).projectId) || undefined;
-  const [projects, documents] = await Promise.all([
+  const params = await searchParams;
+  const filters = listDocumentsSchema.safeParse({ ...params, archived: params.archived === "1" });
+  if (!filters.success) notFound();
+  const { projectId, afterId, archived = false } = filters.data;
+  const [access, needsApproval, seeAll] = await Promise.all([
+    requirePageAccess(user.id, company.id, "documents"),
+    getPageApprovalRequired(user.id, company.id, "documents"),
+    canSeeAllProjects(prisma, user.id, company.id),
+  ]);
+  const canCreate = access === AccessLevel.READ_WRITE;
+  const canManage = canCreate && !needsApproval;
+  const [projects, result] = await Promise.all([
     prisma.project.findMany({
       where: { ...projectVisibilityWhere(company.id, user.id, seeAll), archivedAt: null },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
-    listDocuments(prisma, company.id, projectId, seeAll ? undefined : user.id),
+    listDocumentRows(prisma, company.id, { projectId, archived, afterId }, seeAll ? undefined : user.id),
   ]);
+
+  const documents = result.slice(0, DOCUMENT_PAGE_SIZE);
+  function href(showArchived: boolean, cursor?: number) {
+    const query = new URLSearchParams();
+    if (projectId) query.set("projectId", String(projectId));
+    if (showArchived) query.set("archived", "1");
+    if (cursor) query.set("afterId", String(cursor));
+    return query.size ? `/documents?${query}` : "/documents";
+  }
 
   return (
     <div className="section-gap">
@@ -33,10 +57,10 @@ export default async function DocumentsPage({
           <h1 className="page-title">Documents</h1>
           <p className="page-subtitle mt-2">Markdown documents with outline navigation, voice notes and attachments.</p>
         </div>
-        <span className="chip chip-purple">{documents.length} documents</span>
+        <Link href="/htmldocs/documents.html" aria-label="Document help" title="Document help"><CircleHelp className="size-5" /></Link>
       </header>
 
-      <Card>
+      {canCreate && !archived && <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><FileText className="size-5 text-primary" /> New document</CardTitle>
           <CardDescription>Create it here, then open it to edit content, record voice notes or attach files.</CardDescription>
@@ -58,46 +82,46 @@ export default async function DocumentsPage({
             />
           )}
         </CardContent>
-      </Card>
+      </Card>}
 
-      {documents.length === 0 ? (
-        <div className="block-card p-10 text-center">
-          <p className="font-heading text-xl font-extrabold uppercase">No documents yet</p>
-          <p className="mt-1 text-sm text-muted-foreground">Create one above to start writing.</p>
-        </div>
-      ) : (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {documents.map((document) => (
-            <article key={document.id} className="block-card flex flex-col gap-2 p-4">
-              <p className="text-xs font-bold uppercase text-muted-foreground">{document.project.name}</p>
-              <p className="font-heading text-lg font-extrabold">{document.title}</p>
-              <p className="text-xs text-muted-foreground">
-                v{document.version} · {document.attachments.length} attachments · updated {document.updatedAt.toISOString().slice(0, 10)}
-              </p>
-              <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-                <span className="text-xs text-muted-foreground">{document.contentMarkdown.length.toLocaleString()} chars</span>
-                <DocumentButton
-                  document={{
-                    id: document.id,
-                    projectName: document.project.name,
-                    title: document.title,
-                    contentMarkdown: document.contentMarkdown,
-                    version: document.version,
-                    attachments: document.attachments.map((attachment) => ({
-                      id: attachment.id,
-                      kind: attachment.kind,
-                      fileName: attachment.fileName,
-                      mimeType: attachment.mimeType,
-                      size: attachment.size,
-                      createdAt: attachment.createdAt.toISOString(),
-                    })),
-                  }}
-                />
-              </div>
-            </article>
+      <section className="space-y-3" aria-label="Document list">
+        <nav aria-label="Document status" className="flex flex-wrap gap-2">
+          {[false, true].map((showArchived) => (
+            <Button key={String(showArchived)} asChild size="sm" variant={showArchived === archived ? "default" : "outline"}>
+              <Link href={href(showArchived)} aria-current={showArchived === archived ? "page" : undefined}>{showArchived ? "Archived" : "Active"}</Link>
+            </Button>
           ))}
+        </nav>
+        {documents.length === 0 ? (
+          <p className="block-card p-6 text-center text-muted-foreground">
+            {afterId ? "No more documents on this page." : archived ? "No archived documents." : "No active documents."}
+          </p>
+        ) : (
+          <ul className="block-card divide-y divide-border">
+            {documents.map((doc) => (
+              <li key={doc.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <h2 className="break-words font-bold">{doc.title}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {doc.project.name} · v{doc.version} · {doc._count.attachments} attachments · Updated {doc.updatedAt.toISOString().slice(0, 10)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <DocumentButton id={doc.id} title={doc.title} canManage={canManage} />
+                  {canManage && <>
+                    <ArchiveDocumentButton document={{ id: doc.id, title: doc.title }} archived={archived} />
+                    <DeleteDocumentButton document={{ id: doc.id, title: doc.title }} />
+                  </>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="flex gap-3 text-sm font-semibold underline">
+          {afterId && <Link href={href(archived)}>First page</Link>}
+          {result.length > DOCUMENT_PAGE_SIZE && <Link href={href(archived, documents[documents.length - 1]!.id)}>Next page</Link>}
         </div>
-      )}
+      </section>
     </div>
   );
 }

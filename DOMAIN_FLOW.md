@@ -304,3 +304,7 @@ Architect owns journeys; planner preserves IDs/scope; executor implements and up
 ## Maintenance
 
 - 2026-11-19 — Initial canonical pack generated from project instructions, mandatory rules, Freedcamp capture/scope, Prisma schema, routes, actions, MCP tools and gatekeepers. Static only; runtime unresolved.
+
+### Document management
+
+On `/documents`, a project member opens a document from the Active or Archived list. Authorized writers can archive or restore it with `documents.set_archived`, or confirm permanent deletion with a reason through `documents.delete`. The GUI and MCP use the same project-scoped gatekeepers. See [entity lifecycles](docs/domain/ENTITY_LIFECYCLES.md).

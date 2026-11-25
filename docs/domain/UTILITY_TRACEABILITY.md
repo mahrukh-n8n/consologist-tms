@@ -220,3 +220,7 @@ Reverse trace note: every implemented element row above maps to at least one req
 - [ ] High-stakes acceptance complete; GAP-04, GAP-05, GAP-07 block.
 
 `review-required: utility trace complete at category level; runtime behavior, approval, backup rehearsal, and MCP READ isolation remain unresolved.`
+
+### Document inventory and archive
+
+`documentListQuery` shares tenant, project, status and cursor filters between GUI row summaries and MCP. The GUI reads up to 25 rows plus a lookahead and fetches Markdown and attachment metadata on Open. `gkSetDocumentArchived` enforces project membership, applies the requested state idempotently and records changes in the same transaction. It also handles approved MCP requests. The existing project-documents backup source includes the nullable archive timestamp. Older backup rows restore as active.

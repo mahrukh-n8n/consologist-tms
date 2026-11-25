@@ -251,3 +251,7 @@ Created only by `seedStarterWorkspace` at registration/workspace creation. No cr
 Full inventory and evidence: `docs/domain/UTILITY_TRACEABILITY.md`. All lifecycle claims here are **statically traced**; none are **runtime verified**. Transitions absent from these tables are not permitted without updating the business decision, evidence, and table.
 
 `review-required: entity lifecycles ready for reviewer acceptance; approval, backup, and MCP gaps block runtime acceptance.`
+
+### Project documents
+
+Existing and newly created documents are active (`archivedAt = null`). Archive sets the timestamp and Restore clears it. Both transitions preserve the body, content version and attachment links. Repeating the same transition creates no additional audit entry. An authorized writer may delete from either state with a reason. The deletion snapshot and cascading document/attachment removal commit together.

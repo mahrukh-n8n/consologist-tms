@@ -5,6 +5,7 @@ import {
   MAX_ATTACHMENT_BYTES,
   attachmentSchema,
   createDocumentSchema,
+  setDocumentArchivedSchema,
   updateDocumentSchema,
 } from "@/lib/documents/schema";
 
@@ -111,6 +112,30 @@ export async function gkDeleteDocumentAttachment(
   if (!attachment) throw new Error("Attachment not found in this workspace.");
   await assertProjectMember(db, companyId, userId, attachment.document.projectId);
   await db.documentAttachment.delete({ where: { id: attachment.id } });
+}
+
+export async function gkSetDocumentArchived(db: Db, companyId: number, userId: number, input: unknown) {
+  const { documentId, archived } = setDocumentArchivedSchema.parse(input);
+  return db.$transaction(async (tx) => {
+    const doc = await tx.projectDocument.findFirst({
+      where: { id: documentId, project: { group: { companyId } } },
+      select: { projectId: true },
+    });
+    if (!doc) throw new Error("Document not found in this workspace.");
+    await assertProjectMember(tx, companyId, userId, doc.projectId);
+    const archivedAt = archived ? new Date() : null;
+    const changed = await tx.projectDocument.updateMany({
+      where: { id: documentId, archivedAt: archived ? null : { not: null } },
+      data: { archivedAt, updatedById: userId },
+    });
+    if (changed.count) {
+      await tx.auditLog.create({ data: {
+        companyId, userId, tableName: "project_documents", recordId: documentId, action: "UPDATE",
+        newValues: { archivedAt: archivedAt?.toISOString() ?? null }, changedFields: ["archivedAt"],
+      } });
+    }
+    return tx.projectDocument.findUniqueOrThrow({ where: { id: documentId }, select: { id: true, archivedAt: true } });
+  });
 }
 
 /** Audited document deletion. Attachment bytes are not copied into the audit snapshot. */
