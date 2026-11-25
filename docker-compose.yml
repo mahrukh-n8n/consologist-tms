@@ -41,10 +41,20 @@ services:
       context: .
       dockerfile: Dockerfile
       target: runner
-    env_file:
-      - .env.docker
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-consologist}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-consologist_tms}
+      APP_URL: ${APP_URL:?set APP_URL}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET}
+      BACKUP_SCHEDULE_PASSWORD: ${BACKUP_SCHEDULE_PASSWORD:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_DRIVE_CLIENT_ID: ${GOOGLE_DRIVE_CLIENT_ID:-}
+      GOOGLE_DRIVE_CLIENT_SECRET: ${GOOGLE_DRIVE_CLIENT_SECRET:-}
+      GOOGLE_DRIVE_ENCRYPTION_KEY: ${GOOGLE_DRIVE_ENCRYPTION_KEY:-}
+      GOOGLE_DRIVE_REDIRECT_URI: ${GOOGLE_DRIVE_REDIRECT_URI:-}
     ports:
       - "3200:3000"
     cpus: "2.0"

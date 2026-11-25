@@ -22,7 +22,8 @@ that they must be build args.
 
 ## Runtime environment
 
-- All secrets come from `.env.docker` via compose `env_file`; `.env.docker` is gitignored.
+- Compose passes runtime settings through the app's `environment` block. Supply values
+  through the gitignored `.env.docker` file locally or Portainer's stack settings.
 - `.env.example`, `.env.docker.example`, and `docker-compose.yml` must list every variable
   (backend rule: update all locations).
 - Postgres credentials are immutable once the volume exists — document it, never "fix" it by

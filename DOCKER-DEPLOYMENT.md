@@ -30,6 +30,9 @@ Volumes: `pg_data` (database), `backup_data` (`/app/backups`, filesystem backup 
 
 ## Required environment
 
+For a Portainer Git stack, enter the variables below in the stack's environment settings.
+For local Docker runs, keep the values in the gitignored `.env.docker` file.
+
 | Variable | Required | Notes |
 |---|---|---|
 | `POSTGRES_PASSWORD` | yes | Immutable after first start on a non-empty volume |
@@ -50,7 +53,7 @@ Volumes: `pg_data` (database), `backup_data` (`/app/backups`, filesystem backup 
 - Four stages: `deps` (npm ci + `prisma generate`) → `builder` (`next build`) → `migrator`
   (keeps Prisma CLI, pushes the schema, never serves traffic) → `runner` (standalone bundle only).
 - Build placeholders (`DATABASE_URL`, `JWT_SECRET`, `APP_URL`) exist only so Next can import
-  server modules; real values come from `env_file` at runtime.
+  server modules. Compose passes the real values to the container at runtime.
 - Runtime image runs as `nextjs` (uid 1001) under `tini`; healthcheck uses `fetch()` against
   `/api/health` because Debian slim has no `wget`.
 - `docker-entrypoint.sh` only starts `node server.js`; migrations are a separate one-shot service.

@@ -36,7 +36,7 @@ ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholde
 ENV JWT_SECRET="build-time-placeholder-not-used-at-runtime"
 ENV APP_URL="http://localhost:3000"
 
-RUN npm run build
+RUN mkdir -p public && npm run build
 
 # ---------- Stage 3: migrator (one-shot, keeps Prisma CLI) ----------
 FROM node:24-slim AS migrator
