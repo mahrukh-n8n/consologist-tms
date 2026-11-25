@@ -1,0 +1,62 @@
+.tms-mdx {
+  --mdxeditor-border-color: var(--border);
+  --mdxeditor-toolbar-bg: var(--muted);
+  background: var(--card);
+}
+.tms-mdx [class*="_toolbarRoot"] {
+  background: var(--muted) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 6px !important;
+  flex-wrap: wrap;
+}
+.tms-mdx [class*="_toolbarButton"] { border-radius: 6px !important; }
+.tms-mdx [class*="_contentEditable"] {
+  padding: 16px !important;
+  outline: none !important;
+  font-family: var(--font-body) !important;
+  min-height: var(--tms-min-height, 180px);
+}
+.tms-prose h1, .tms-prose h2, .tms-prose h3 { font-family: var(--font-heading); font-weight: 800; letter-spacing: -0.02em; }
+.tms-prose h1 { font-size: 1.8rem; margin: 1rem 0 .5rem; }
+.tms-prose h2 { font-size: 1.4rem; margin: .9rem 0 .4rem; }
+.tms-prose h3 { font-size: 1.15rem; margin: .8rem 0 .35rem; }
+.tms-prose p { margin: .5rem 0; }
+.tms-prose ul, .tms-prose ol { padding-left: 1.35rem; margin: .5rem 0; }
+.tms-prose ul { list-style: disc; }
+.tms-prose ol { list-style: decimal; }
+.tms-prose blockquote { border-left: 3px solid var(--primary); padding-left: .8rem; color: var(--muted-foreground); margin: .6rem 0; }
+.tms-prose table { border-collapse: collapse; margin: .6rem 0; }
+.tms-prose th, .tms-prose td { border: 1px solid var(--border); padding: .4rem .6rem; }
+.tms-prose code { background: var(--muted); padding: .1rem .3rem; border-radius: 4px; }
+.tms-prose pre { background: #0f172a; color: #e2e8f0; padding: .8rem; border-radius: 8px; overflow-x: auto; }
+
+/* Toolbar dropdowns (heading selector) must escape the editor box */
+.tms-mdx [class*="_toolbarRoot"] {
+  overflow: visible !important;
+}
+
+/* Radix select popups must sit above the toolbar and content */
+.tms-mdx .mdxeditor-popup-container,
+.mdxeditor-popup-container {
+  z-index: 200 !important;
+  position: relative;
+}
+.tms-mdx [class*="_editorRoot"] {
+  overflow: visible !important;
+}
+.tms-mdx [class*="_toolbarNodeKindSelectContainer"],
+.tms-mdx [class*="_toolbarNodeKindSelectTrigger"],
+.tms-mdx [class*="_selectContainer"],
+.tms-mdx [class*="_dropdown"] {
+  z-index: 80 !important;
+}
+.tms-mdx [class*="_toolbarNodeKindSelectDropdown"] {
+  position: absolute !important;
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.18) !important;
+  padding: 4px !important;
+  min-width: 12rem;
+}

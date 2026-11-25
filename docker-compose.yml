@@ -1,0 +1,99 @@
+# Consologist TMS — Docker stack.
+#
+#   cp .env.docker.example .env.docker   # fill in secrets
+#   docker compose --env-file .env.docker up -d --build
+#
+# Host port 3200 → container 3000 (reverse proxy forwards to container port 3000).
+
+name: consologist-tms
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-consologist}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.docker}
+      POSTGRES_DB: ${POSTGRES_DB:-consologist_tms}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-consologist} -d ${POSTGRES_DB:-consologist_tms}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # One-shot: pushes the Prisma schema (development; no migrations yet), then exits.
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: migrator
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-consologist}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-consologist_tms}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    env_file:
+      - .env.docker
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-consologist}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-consologist_tms}
+    ports:
+      - "3200:3000"
+    cpus: "2.0"
+    mem_limit: 4g
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      - backup_data:/app/backups
+    restart: unless-stopped
+
+  # Due/overdue email alerts — every 15 minutes.
+  cron-alerts:
+    image: curlimages/curl:8.10.1
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          curl -fsS -H "Authorization: Bearer $${CRON_SECRET}" http://app:3000/api/cron/due-alerts >/dev/null || echo "due-alerts failed"
+          sleep 900
+        done
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Scheduled encrypted backups — hourly trigger; the app decides what is due.
+  cron-backups:
+    image: curlimages/curl:8.10.1
+    environment:
+      CRON_SECRET: ${CRON_SECRET}
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          curl -fsS -H "Authorization: Bearer $${CRON_SECRET}" http://app:3000/api/cron/backups >/dev/null || echo "backups failed"
+          sleep 3600
+        done
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  backup_data:

@@ -1,0 +1,922 @@
+// Consologist TMS (Task Management System) — multi-tenant Prisma schema.
+// Company = workspace (Freedcamp workspace). Groups and projects hang off it.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Foundation enums (portable auth-rbac/auth-session contract) ───
+
+enum Role {
+  READ_ONLY
+  COMMENT
+  WRITE
+  DELETE
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AccessLevel {
+  NONE
+  READ_ONLY
+  READ_WRITE
+}
+
+enum TokenType {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+  INVITE
+}
+
+// ─── Freedcamp domain enums ───
+
+enum ProjectRole {
+  OWNER
+  ADMIN
+  MEMBER
+  GUEST
+}
+
+enum TaskStatus {
+  NO_PROGRESS
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Eisenhower matrix classification. Independent of workflow status.
+enum TaskQuadrant {
+  DO_FIRST
+  SCHEDULE
+  DELEGATE
+  ELIMINATE
+}
+
+enum ApplicationKind {
+  PROJECT
+  GROUP
+  GLOBAL
+}
+
+// ─── Tenancy, users, auth ───
+
+model Company {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userCompanyRoles          UserCompanyRole[]
+  groups                    ProjectGroup[]
+  tags                      Tag[]
+  customStatuses            CustomStatus[]
+  chatMessages              ChatMessage[]
+  permissionTemplates       PermissionTemplate[]
+  userPermissionAssignments UserPermissionAssignment[]
+  userPermissionOverrides   UserPermissionOverride[]
+  permissionAuditLogs       PermissionAuditLog[]
+  pendingApprovals          PendingApproval[]
+  auditLogs                 AuditLog[]
+  notifications             Notification[]
+  invitations               Invitation[]
+  mcpApiKeys                McpApiKey[]
+  googleDrive               CompanyGoogleDrive?
+  backups                   Backup[]
+  backupSchedules           BackupSchedule[]
+
+  @@map("companies")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  fullName     String   @map("full_name")
+  passwordHash String?  @map("password_hash")
+  emailVerified Boolean @default(false) @map("email_verified")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  userCompanyRoles          UserCompanyRole[]
+  sessions                  Session[]
+  emailTokens               EmailToken[]
+  oauthAccounts             OAuthAccount[]
+  auditLogs                 AuditLog[]
+  notifications             Notification[]
+  sentInvitations           Invitation[]
+  permissionAssignments     UserPermissionAssignment[] @relation("permissionAssignments")
+  permissionAssignedBy      UserPermissionAssignment[] @relation("permissionAssignedBy")
+  permissionOverrides       UserPermissionOverride[]   @relation("permissionOverrides")
+  permissionOverrideSetBy   UserPermissionOverride[]   @relation("permissionOverrideSetBy")
+  permissionAuditActor      PermissionAuditLog[]       @relation("permissionAuditActor")
+  permissionAuditTarget     PermissionAuditLog[]       @relation("permissionAuditTarget")
+  pendingApprovalSubmissions PendingApproval[] @relation("PendingApprovalSubmitter")
+  pendingApprovalReviews     PendingApproval[] @relation("PendingApprovalReviewer")
+  mcpWritesEnabled          Boolean @default(false) @map("mcp_writes_enabled")
+  mcpApiKeys                McpApiKey[]
+  groupMembers              GroupMember[]
+  projectMembers            ProjectMember[]
+  createdTasks              Task[] @relation("TaskCreator")
+  taskAssignments           TaskAssignee[]
+  chatMessages              ChatMessage[]
+  comments                  Comment[]
+  timeRecords               TimeRecord[]
+  savedSearches             SavedSearch[]
+  backups                   Backup[]
+
+  @@map("users")
+}
+
+model UserCompanyRole {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  companyId Int      @map("company_id")
+  role      Role
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@map("user_company_roles")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    Int      @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  userAgent String?  @map("user_agent")
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model EmailToken {
+  id         String    @id @default(cuid())
+  userId     Int       @map("user_id")
+  token      String    @unique
+  type       TokenType
+  expiresAt  DateTime  @map("expires_at")
+  consumedAt DateTime? @map("consumed_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_tokens")
+}
+
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            Int      @map("user_id")
+  provider          String
+  providerAccountId String   @map("provider_account_id")
+  email             String
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("oauth_accounts")
+}
+
+model Invitation {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  email     String
+  role      Role
+  token     String   @unique @default(uuid())
+  expiresAt DateTime @map("expires_at")
+  accepted  Boolean  @default(false)
+  invitedBy Int      @map("invited_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  inviter User    @relation(fields: [invitedBy], references: [id])
+
+  @@index([companyId])
+  @@index([email])
+  @@map("invitations")
+}
+
+// ─── RBAC (portable auth-rbac contract) ───
+
+model PermissionTemplate {
+  id          Int      @id @default(autoincrement())
+  companyId   Int      @map("company_id")
+  name        String
+  description String?
+  isDefault   Boolean  @default(false) @map("is_default")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  pages       PermissionTemplatePage[]
+  assignments UserPermissionAssignment[]
+
+  @@unique([companyId, name])
+  @@map("permission_templates")
+}
+
+model PermissionTemplatePage {
+  id               Int         @id @default(autoincrement())
+  templateId       Int         @map("template_id")
+  pageKey          String      @map("page_key")
+  accessLevel      AccessLevel @map("access_level")
+  requiresApproval Boolean     @default(false) @map("requires_approval")
+
+  template PermissionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, pageKey])
+  @@map("permission_template_pages")
+}
+
+model UserPermissionOverride {
+  id          Int         @id @default(autoincrement())
+  userId      Int         @map("user_id")
+  companyId   Int         @map("company_id")
+  pageKey     String      @map("page_key")
+  accessLevel AccessLevel @map("access_level")
+  setBy       Int         @map("set_by")
+  setAt       DateTime    @default(now()) @map("set_at")
+
+  user      User    @relation("permissionOverrides", fields: [userId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  setByUser User    @relation("permissionOverrideSetBy", fields: [setBy], references: [id])
+
+  @@unique([userId, companyId, pageKey])
+  @@map("user_permission_overrides")
+}
+
+model UserPermissionAssignment {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  companyId  Int      @map("company_id")
+  templateId Int      @map("template_id")
+  assignedBy Int      @map("assigned_by")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  user           User               @relation("permissionAssignments", fields: [userId], references: [id], onDelete: Cascade)
+  company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  template       PermissionTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  assignedByUser User               @relation("permissionAssignedBy", fields: [assignedBy], references: [id])
+
+  @@unique([userId, companyId])
+  @@map("user_permission_assignments")
+}
+
+model PermissionAuditLog {
+  id           Int      @id @default(autoincrement())
+  companyId    Int      @map("company_id")
+  actorId      Int      @map("actor_id")
+  targetUserId Int?     @map("target_user_id")
+  actionType   String   @map("action_type")
+  beforeState  Json?    @map("before_state")
+  afterState   Json?    @map("after_state")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  actor      User    @relation("permissionAuditActor", fields: [actorId], references: [id])
+  targetUser User?   @relation("permissionAuditTarget", fields: [targetUserId], references: [id])
+
+  @@index([companyId, createdAt])
+  @@map("permission_audit_logs")
+}
+
+model PendingApproval {
+  id              Int       @id @default(autoincrement())
+  companyId       Int       @map("company_id")
+  entityType      String    @map("entity_type")
+  entityId        Int?      @map("entity_id")
+  pageKey         String    @map("page_key")
+  payload         Json
+  displayPayload  Json?     @map("display_payload")
+  status          String    @default("PENDING")
+  submittedBy     Int       @map("submitted_by")
+  submittedAt     DateTime  @default(now()) @map("submitted_at")
+  reviewedBy      Int?      @map("reviewed_by")
+  reviewedAt      DateTime? @map("reviewed_at")
+  rejectionReason String?   @map("rejection_reason")
+
+  company   Company @relation(fields: [companyId], references: [id])
+  submitter User    @relation("PendingApprovalSubmitter", fields: [submittedBy], references: [id])
+  reviewer  User?   @relation("PendingApprovalReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([companyId, entityType, status])
+  @@map("pending_approvals")
+}
+
+// ─── Audit, notifications, MCP keys, Drive ───
+
+model AuditLog {
+  id            Int      @id @default(autoincrement())
+  companyId     Int      @map("company_id")
+  userId        Int      @map("user_id")
+  tableName     String   @map("table_name")
+  recordId      Int      @map("record_id")
+  action        String
+  oldValues     Json?    @map("old_values")
+  newValues     Json?    @map("new_values")
+  changedFields Json?    @map("changed_fields")
+  userRole      String?  @map("user_role")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([companyId, tableName, recordId])
+  @@index([companyId, createdAt])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  userId    Int      @map("user_id")
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([companyId, userId, isRead])
+  @@map("notifications")
+}
+
+model McpApiKey {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  companyId  Int       @map("company_id")
+  keyHash    String    @map("key_hash")
+  keyPrefix  String    @map("key_prefix")
+  label      String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  revokedAt  DateTime? @map("revoked_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([userId, companyId, revokedAt])
+  @@index([companyId, revokedAt])
+  @@map("mcp_api_keys")
+}
+
+model CompanyGoogleDrive {
+  id                    String   @id @default(cuid())
+  companyId             Int      @unique @map("company_id")
+  encryptedRefreshToken String   @map("encrypted_refresh_token")
+  folderId              String   @map("folder_id")
+  folderName            String   @map("folder_name")
+  connectedByUserId     Int      @map("connected_by_user_id")
+  connectedAt           DateTime @default(now()) @map("connected_at")
+  preferLocalStorage    Boolean  @default(false) @map("prefer_local_storage")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_google_drive")
+}
+
+// ─── Freedcamp: groups, projects, apps ───
+
+model ProjectGroup {
+  id          Int      @id @default(autoincrement())
+  companyId   Int      @map("company_id")
+  name        String
+  description String?
+  uniqueName  String   @map("unique_name")
+  ownerId     Int      @map("owner_id")
+  order       Int      @default(0)
+  fManaged    Boolean  @default(false) @map("f_managed")
+  archivedAt  DateTime? @map("archived_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  company    Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  projects   Project[]
+  members    GroupMember[]
+  groupApps  GroupApplication[]
+
+  @@unique([companyId, uniqueName])
+  @@map("project_groups")
+}
+
+model GroupMember {
+  id      Int         @id @default(autoincrement())
+  groupId Int         @map("group_id")
+  userId  Int         @map("user_id")
+  role    ProjectRole @default(MEMBER)
+
+  group ProjectGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("group_members")
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  groupId     Int      @map("group_id")
+  name        String
+  description String?
+  uniqueName  String   @map("unique_name")
+  color       String   @default("#4a86f7")
+  ownerId     Int      @map("owner_id")
+  fPublic     Boolean  @default(false) @map("f_public")
+  fActive     Boolean  @default(true) @map("f_active")
+  archivedAt  DateTime? @map("archived_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  group       ProjectGroup       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  members     ProjectMember[]
+  apps        ProjectApplication[]
+  taskLists   TaskList[]
+  tasks       Task[]
+  discussions Discussion[]
+  documents   ProjectDocument[]
+  comments    Comment[]
+  folders     FileFolder[]
+  files       FileRecord[]
+  times       TimeRecord[]
+  events      CalendarEvent[]
+  milestones  Milestone[]
+  issues      Issue[]
+
+  @@unique([groupId, uniqueName])
+  @@index([groupId])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        Int         @id @default(autoincrement())
+  projectId Int         @map("project_id")
+  userId    Int         @map("user_id")
+  role      ProjectRole @default(MEMBER)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@map("project_members")
+}
+
+model Application {
+  id           Int             @id @default(autoincrement())
+  appKey       String          @unique @map("app_key")
+  title        String
+  singularName String          @map("singular_name")
+  kind         ApplicationKind
+  viewType     String          @map("view_type")
+
+  projectInstalls ProjectApplication[]
+  groupInstalls   GroupApplication[]
+
+  @@map("applications")
+}
+
+model ProjectApplication {
+  id            Int  @id @default(autoincrement())
+  projectId     Int  @map("project_id")
+  applicationId Int  @map("application_id")
+  enabled       Boolean @default(true)
+
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, applicationId])
+  @@map("project_applications")
+}
+
+model GroupApplication {
+  id            Int  @id @default(autoincrement())
+  groupId       Int  @map("group_id")
+  applicationId Int  @map("application_id")
+  enabled       Boolean @default(true)
+
+  group       ProjectGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  application Application  @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, applicationId])
+  @@map("group_applications")
+}
+
+// ─── Tasks and discussions ───
+
+model TaskList {
+  id        Int     @id @default(autoincrement())
+  projectId Int     @map("project_id")
+  name      String
+  order     Int     @default(0)
+  archived  Boolean @default(false)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([projectId, order])
+  @@map("task_lists")
+}
+
+model Task {
+  id           Int          @id @default(autoincrement())
+  projectId    Int          @map("project_id")
+  listId       Int          @map("list_id")
+  parentId     Int?         @map("parent_id")
+  title        String
+  description  String       @default("")
+  status       TaskStatus   @default(NO_PROGRESS)
+  priority     TaskPriority @default(NONE)
+  quadrant     TaskQuadrant? @map("quadrant")
+  progress     Int          @default(0)
+  createdById  Int          @map("created_by_id")
+  startAt      DateTime?    @map("start_at")
+  dueAt        DateTime?    @map("due_at")
+  completedAt  DateTime?    @map("completed_at")
+  archivedAt   DateTime?    @map("archived_at")
+  order        Int          @default(0)
+  recurrence   String?      @map("recurrence_rule")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  list       TaskList    @relation(fields: [listId], references: [id], onDelete: Cascade)
+  parent     Task?       @relation("TaskTree", fields: [parentId], references: [id])
+  children   Task[]      @relation("TaskTree")
+  assignees  TaskAssignee[]
+  createdBy  User        @relation("TaskCreator", fields: [createdById], references: [id])
+  tags           TaskTag[]
+  customStatusId Int?         @map("custom_status_id")
+  customStatus   CustomStatus? @relation(fields: [customStatusId], references: [id])
+
+  @@index([projectId, listId, order])
+  @@index([projectId, status])
+  @@index([projectId, archivedAt])
+  @@index([parentId])
+  @@map("tasks")
+}
+
+model TaskAssignee {
+  taskId Int @map("task_id")
+  userId Int @map("user_id")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, userId])
+  @@index([userId])
+  @@map("task_assignees")
+}
+
+model TaskTag {
+  taskId Int @map("task_id")
+  tagId  Int @map("tag_id")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+  @@map("task_tags")
+}
+
+model CustomStatus {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  name      String
+  color     String   @default("#4a86f7")
+  order     Int      @default(0)
+  archived  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@unique([companyId, name])
+  @@map("custom_statuses")
+}
+
+model DeletionAudit {
+  id           Int      @id @default(autoincrement())
+  companyId    Int      @map("company_id")
+  actorId      Int      @map("actor_id")
+  entityType   String   @map("entity_type")
+  entityId     Int      @map("entity_id")
+  reason       String
+  snapshot     Json
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([companyId, createdAt])
+  @@index([companyId, entityType, entityId])
+  @@map("deletion_audits")
+}
+
+model Tag {
+  id        Int    @id @default(autoincrement())
+  companyId Int    @map("company_id")
+  title     String
+  ownerId   Int    @map("owner_id")
+
+  company Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tasks   TaskTag[]
+
+  @@unique([companyId, title])
+  @@map("tags")
+}
+
+model ProjectDocument {
+  id              Int      @id @default(autoincrement())
+  projectId       Int      @map("project_id")
+  title           String
+  contentMarkdown String   @default("") @map("content_markdown")
+  version         Int      @default(1)
+  createdById     Int      @map("created_by_id")
+  updatedById     Int?     @map("updated_by_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  attachments DocumentAttachment[]
+
+  @@index([projectId])
+  @@map("project_documents")
+}
+
+model DocumentAttachment {
+  id         Int      @id @default(autoincrement())
+  documentId Int      @map("document_id")
+  kind       String
+  fileName   String   @map("file_name")
+  mimeType   String   @map("mime_type")
+  size       Int
+  data       Bytes
+  createdById Int     @map("created_by_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  document ProjectDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_attachments")
+}
+
+model Discussion {
+  id          Int      @id @default(autoincrement())
+  projectId   Int      @map("project_id")
+  title       String
+  body        String   @default("")
+  sticky      Boolean  @default(false)
+  private     Boolean  @default(false)
+  createdById Int      @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("discussions")
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  itemType  String   @map("item_type")
+  itemId    Int      @map("item_id")
+  userId    Int      @map("user_id")
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, itemType, itemId])
+  @@map("comments")
+}
+
+// ─── Files (Google Drive instead of S3) ───
+
+model FileFolder {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  parentId  Int?     @map("parent_id")
+  name      String
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent  FileFolder?  @relation("FolderTree", fields: [parentId], references: [id])
+  folders FileFolder[] @relation("FolderTree")
+  files   FileRecord[]
+
+  @@index([projectId, parentId])
+  @@map("file_folders")
+}
+
+model FileRecord {
+  id           Int      @id @default(autoincrement())
+  projectId    Int      @map("project_id")
+  folderId     Int?     @map("folder_id")
+  uploadedById Int      @map("uploaded_by_id")
+  name         String
+  mimeType     String   @map("mime_type")
+  size         Int
+  driveFileId  String   @map("drive_file_id")
+  webViewLink  String   @map("web_view_link")
+  downloadUrl  String   @map("download_url")
+  itemType     String?  @map("item_type")
+  itemId       Int?     @map("item_id")
+  version      Int      @default(1)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  project Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  folder  FileFolder? @relation(fields: [folderId], references: [id])
+
+  @@index([projectId, folderId])
+  @@map("files")
+}
+
+// ─── Time, calendar, other apps ───
+
+model TimeRecord {
+  id           Int      @id @default(autoincrement())
+  projectId    Int      @map("project_id")
+  userId       Int      @map("user_id")
+  date         DateTime @map("date")
+  minutes      Int
+  description  String   @default("")
+  linkItemType String?  @map("link_item_type")
+  linkItemId   Int?     @map("link_item_id")
+  billed       Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, date])
+  @@map("time_records")
+}
+
+model CalendarEvent {
+  id          Int      @id @default(autoincrement())
+  projectId   Int      @map("project_id")
+  title       String
+  description String   @default("")
+  startAt     DateTime @map("start_at")
+  endAt       DateTime? @map("end_at")
+  allDay      Boolean  @default(false) @map("all_day")
+  createdById Int      @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, startAt])
+  @@map("calendar_events")
+}
+
+model Milestone {
+  id        Int       @id @default(autoincrement())
+  projectId Int       @map("project_id")
+  title     String
+  dueAt     DateTime? @map("due_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("milestones")
+}
+
+model Issue {
+  id        Int      @id @default(autoincrement())
+  projectId Int      @map("project_id")
+  title     String
+  body      String   @default("")
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("issues")
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  userId    Int      @map("user_id")
+  body      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, createdAt])
+  @@map("chat_messages")
+}
+
+model SavedSearch {
+  id         Int     @id @default(autoincrement())
+  userId     Int     @map("user_id")
+  projectId  Int?    @map("project_id")
+  appKey     String  @map("app_key")
+  title      String
+  filter     Json    @default("{}")
+  isPublic   Boolean @default(false) @map("is_public")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, appKey, projectId])
+  @@map("saved_searches")
+}
+
+
+// ─── Backups (portable backup module storage) ───
+
+model Backup {
+  id               Int      @id @default(autoincrement())
+  companyId        Int      @map("company_id")
+  userId           Int      @map("user_id")
+  fileName         String   @map("file_name")
+  filePath         String?  @map("file_path")
+  fileSize         Int      @map("file_size")
+  checksum         String
+  sourceCount      Int      @default(0) @map("source_count")
+  storageLocations String   @default("db") @map("storage_locations")
+  isSafetyBackup   Boolean  @default(false) @map("is_safety_backup")
+  isScheduled      Boolean  @default(false) @map("is_scheduled")
+  isComplete       Boolean  @default(false) @map("is_complete")
+  encryptedData    Bytes?   @map("encrypted_data")
+  driveFileId      String?  @map("drive_file_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@map("backups")
+}
+
+model BackupSchedule {
+  id               Int       @id @default(autoincrement())
+  companyId        Int       @map("company_id")
+  intervalHours    Int       @map("interval_hours")
+  retentionCount   Int       @map("retention_count")
+  storageLocations String    @default("db") @map("storage_locations")
+  isActive         Boolean   @default(true) @map("is_active")
+  lastRunAt        DateTime? @map("last_run_at")
+  nextRunAt        DateTime? @map("next_run_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId])
+  @@map("backup_schedules")
+}
+
+// ─── Email alerts ───
+
+model EmailAlert {
+  id        Int      @id @default(autoincrement())
+  companyId Int      @map("company_id")
+  userId    Int      @map("user_id")
+  taskId    Int?     @map("task_id")
+  kind          String
+  dedupeKey     String    @unique @map("dedupe_key")
+  status        String    @default("PENDING")
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  lastAttemptAt DateTime? @map("last_attempt_at")
+  sentAt        DateTime  @default(now()) @map("sent_at")
+
+  @@index([companyId, sentAt])
+  @@index([status, lastAttemptAt])
+  @@index([userId, sentAt])
+  @@map("email_alerts")
+}
+
+model EmailAlertPreference {
+  id           Int     @id @default(autoincrement())
+  userId       Int     @map("user_id")
+  companyId    Int     @map("company_id")
+  dueSoon      Boolean @default(true) @map("due_soon")
+  overdue      Boolean @default(true)
+  comment      Boolean @default(true)
+  mention      Boolean @default(true)
+
+  @@unique([userId, companyId])
+  @@map("email_alert_preferences")
+}
