@@ -19,12 +19,12 @@ export const accountTools: McpToolDefinition[] = [
   },
   {
     name: "account.update_alert_prefs",
-    description: "Update email alert preferences: due soon, overdue, comment, mention.",
+    description: "Update email alert preferences: due soon, overdue, comment, mention and the daily diary digest.",
     inputSchema: updateAlertPreferencesSchema,
     requiredPageKey: "manage-account",
     accessLevel: "WRITE",
     async handler(ctx, input) {
-      const data = input as { dueSoon: boolean; overdue: boolean; comment: boolean; mention: boolean };
+      const data = input as { dueSoon: boolean; overdue: boolean; comment: boolean; mention: boolean; digest: boolean };
       const saved = await updateAlertPreferences(ctx.db, {
         userId: ctx.userId,
         companyId: ctx.companyId,

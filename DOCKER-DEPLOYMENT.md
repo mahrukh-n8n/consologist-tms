@@ -25,6 +25,7 @@ Services:
 | `app` | Next.js standalone server (runtime image, non-root, healthcheck) |
 | `cron-alerts` | Every 15 min → `GET /api/cron/due-alerts` with `CRON_SECRET` |
 | `cron-backups` | Hourly → `GET /api/cron/backups` (app decides what is due) |
+| `cron-daily` | Hourly → `GET /api/cron/daily-digest` (deduped: one diary email per member per day) |
 
 Volumes: `pg_data` (database), `backup_data` (`/app/backups`, filesystem backup destination).
 

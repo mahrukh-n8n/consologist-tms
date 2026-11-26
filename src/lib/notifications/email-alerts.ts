@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import { TaskStatus } from "@/generated/prisma/enums";
 import {
+  sendDailyDigestEmail,
   sendTaskCommentEmail,
   sendTaskDueSoonEmail,
   sendTaskMentionEmail,
@@ -22,6 +23,7 @@ async function preferences(db: Db, userId: number, companyId: number) {
     overdue: row?.overdue ?? true,
     comment: row?.comment ?? true,
     mention: row?.mention ?? true,
+    digest: row?.digest ?? true,
   };
 }
 
@@ -57,7 +59,7 @@ async function claim(db: Db, input: {
 async function deliver(db: Db, key: {
   companyId: number;
   userId: number;
-  taskId: number;
+  taskId: number | null;
   kind: string;
   dedupeKey: string;
 }, send: () => Promise<void>): Promise<boolean> {
@@ -234,4 +236,90 @@ export async function runDueAlerts(db: Db, now = new Date()): Promise<DueAlertRu
   }
 
   return { dueSoon, overdue, scanned };
+}
+
+
+export type DailyDigestRun = { sent: number; skipped: number; scanned: number };
+
+/**
+ * Daily diary: one email per member per company per calendar day (UTC) with
+ * overdue, due-soon and the rest of their assigned open tasks. Deduped by date.
+ */
+export async function runDailyDigests(db: Db, now = new Date()): Promise<DailyDigestRun> {
+  const date = now.toISOString().slice(0, 10);
+  const soonCutoff = new Date(now.getTime() + DUE_SOON_WINDOW_MS);
+  const members = await db.userCompanyRole.findMany({
+    select: {
+      userId: true,
+      companyId: true,
+      user: { select: { email: true, fullName: true } },
+      company: { select: { name: true } },
+    },
+  });
+
+  let sent = 0;
+  let skipped = 0;
+  let scanned = 0;
+
+  for (const member of members) {
+    const prefs = await preferences(db, member.userId, member.companyId);
+    if (!prefs.digest) {
+      skipped += 1;
+      continue;
+    }
+
+    const tasks = await db.task.findMany({
+      where: {
+        archivedAt: null,
+        status: { not: TaskStatus.COMPLETED },
+        assignees: { some: { userId: member.userId } },
+        project: { group: { companyId: member.companyId } },
+        list: { archived: false },
+      },
+      select: { id: true, title: true, dueAt: true, project: { select: { name: true } } },
+      orderBy: { dueAt: "asc" },
+      take: 200,
+    });
+    scanned += tasks.length;
+    if (tasks.length === 0) {
+      skipped += 1;
+      continue;
+    }
+
+    const overdue: { title: string; projectName: string; dueAt: Date | null }[] = [];
+    const dueSoon: { title: string; projectName: string; dueAt: Date | null }[] = [];
+    const assigned: { title: string; projectName: string; dueAt: Date | null }[] = [];
+    for (const task of tasks) {
+      const row = { title: task.title, projectName: task.project.name, dueAt: task.dueAt };
+      if (task.dueAt && task.dueAt.getTime() < now.getTime()) overdue.push(row);
+      else if (task.dueAt && task.dueAt.getTime() <= soonCutoff.getTime()) dueSoon.push(row);
+      else assigned.push(row);
+    }
+
+    const ok = await deliver(
+      db,
+      {
+        companyId: member.companyId,
+        userId: member.userId,
+        taskId: null,
+        kind: "daily-digest",
+        dedupeKey: `daily-digest:${member.companyId}:${member.userId}:${date}`,
+      },
+      () =>
+        sendDailyDigestEmail({
+          to: member.user.email,
+          recipientName: member.user.fullName ?? member.user.email,
+          companyName: member.company.name,
+          overdue: overdue.slice(0, 20),
+          dueSoon: dueSoon.slice(0, 20),
+          assigned: assigned.slice(0, 20),
+          total: tasks.length,
+          date,
+        })
+    );
+    if (ok) sent += 1;
+    else skipped += 1;
+  }
+
+  return { sent, skipped, scanned };
 }

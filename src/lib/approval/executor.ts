@@ -132,6 +132,7 @@ async function executeAlertPrefs(db: Db, payload: Record<string, unknown>, submi
     overdue: Boolean(payload["overdue"]),
     comment: Boolean(payload["comment"]),
     mention: Boolean(payload["mention"]),
+    digest: Boolean(payload["digest"] ?? true),
   });
   return { entityId: null };
 }

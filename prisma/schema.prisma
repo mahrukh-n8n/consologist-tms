@@ -926,6 +926,7 @@ model EmailAlertPreference {
   overdue      Boolean @default(true)
   comment      Boolean @default(true)
   mention      Boolean @default(true)
+  digest       Boolean @default(true)
 
   @@unique([userId, companyId])
   @@map("email_alert_preferences")

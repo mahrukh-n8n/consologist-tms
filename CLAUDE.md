@@ -151,7 +151,7 @@ MCP tools (shared gatekeepers): `tasks.list` / `tasks.create` / `tasks.update_st
 `backups.list` / `backups.create` / `backups.preview_restore` / `backups.restore` / `backups.delete`,
 `users.list` / `users.invite` / `users.revoke_invitation`,
 `account.get_alert_prefs` / `account.update_alert_prefs`,
-email alerts (due soon, overdue, comment, mention) for assignees + due-alert cron,
+email alerts (due soon, overdue, comment, mention, daily diary digest) for assignees + alert cron,
 account page with MCP API keys and write toggle.
 
 Next slices follow `../RECONSTRUCTION-SCOPE.md`: discussions, files (Drive), calendar,

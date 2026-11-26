@@ -42,7 +42,8 @@ that they must be build args.
 ## Cron
 
 - Background work is triggered over HTTP with `CRON_SECRET`:
-  `/api/cron/due-alerts` (15 min) and `/api/cron/backups` (hourly).
+  `/api/cron/due-alerts` (15 min), `/api/cron/backups` (hourly) and
+  `/api/cron/daily-digest` (hourly trigger; the app dedupes to one diary email per member per day).
 - Cron containers call the app by service name (`http://app:3000`), never the public domain.
 
 ## Verification before shipping a Docker change

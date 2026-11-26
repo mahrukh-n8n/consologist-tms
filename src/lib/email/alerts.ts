@@ -87,6 +87,56 @@ export async function sendTaskMentionEmail(input: TaskAlertInput) {
   );
 }
 
+
+export type DigestTask = {
+  title: string;
+  projectName: string;
+  dueAt: Date | null;
+};
+
+function digestRows(tasks: DigestTask[]): string {
+  return tasks
+    .map((task) => `<li style="margin:0 0 6px;font-size:14px;color:#374151;">${escapeHtml(task.title)} · ${escapeHtml(task.projectName)}${task.dueAt ? ` · due ${task.dueAt.toISOString().slice(0, 10)}` : ""}</li>`)
+    .join("");
+}
+
+/** One email per user per day: overdue, due soon and the rest of their assigned tasks. */
+export async function sendDailyDigestEmail(input: {
+  to: string;
+  recipientName: string;
+  companyName: string;
+  overdue: DigestTask[];
+  dueSoon: DigestTask[];
+  assigned: DigestTask[];
+  total: number;
+  date: string;
+}) {
+  const sections: string[] = [];
+  if (input.overdue.length > 0) {
+    sections.push(`<h2 style="margin:18px 0 8px;font-size:16px;color:#b91c1c;">Overdue (${input.overdue.length})</h2><ul style="padding-left:18px;margin:0;">${digestRows(input.overdue)}</ul>`);
+  }
+  if (input.dueSoon.length > 0) {
+    sections.push(`<h2 style="margin:18px 0 8px;font-size:16px;color:#b45309;">Due soon (${input.dueSoon.length})</h2><ul style="padding-left:18px;margin:0;">${digestRows(input.dueSoon)}</ul>`);
+  }
+  if (input.assigned.length > 0) {
+    sections.push(`<h2 style="margin:18px 0 8px;font-size:16px;color:#111827;">Assigned (${input.assigned.length})</h2><ul style="padding-left:18px;margin:0;">${digestRows(input.assigned)}</ul>`);
+  }
+
+  await sendEmail({
+    to: input.to,
+    subject: `${APP_NAME} daily diary · ${input.date} · ${input.total} task${input.total === 1 ? "" : "s"}`,
+    html: `
+      <h1 style="margin:0 0 8px;font-size:22px;color:#111827;">Your daily diary</h1>
+      <p style="margin:0 0 8px;font-size:15px;color:#374151;">Hi ${escapeHtml(input.recipientName)}, here is ${escapeHtml(input.companyName)} for ${input.date}.</p>
+      ${sections.join("")}
+      <p style="margin:20px 0;">
+        <a href="${APP_URL}/tasks" style="display:inline-block;background:#2f6fe0;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;">Open tasks</a>
+      </p>
+      <p style="font-size:12px;color:#6b7280;">${APP_NAME} · sent once a day</p>
+    `,
+  });
+}
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")

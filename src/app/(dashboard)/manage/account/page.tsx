@@ -57,6 +57,10 @@ export default async function AccountPage() {
               <input type="checkbox" name="mention" defaultChecked={alertPrefs.mention} />
               Tagged/mentioned in a comment
             </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="digest" defaultChecked={alertPrefs.digest} />
+              Daily diary (one email a day: overdue, due soon, assigned)
+            </label>
             <Button type="submit" variant="outline" size="sm">Save alert preferences</Button>
           </form>
         </CardContent>

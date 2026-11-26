@@ -8,6 +8,7 @@ export const updateAlertPreferencesSchema = z.object({
   overdue: z.boolean().default(true),
   comment: z.boolean().default(true),
   mention: z.boolean().default(true),
+  digest: z.boolean().default(true),
 });
 
 export const ALERT_DEFAULTS = {
@@ -15,6 +16,7 @@ export const ALERT_DEFAULTS = {
   overdue: true,
   comment: true,
   mention: true,
+  digest: true,
 } as const;
 
 export async function getAlertPreferences(db: Db, userId: number, companyId: number) {
@@ -26,6 +28,7 @@ export async function getAlertPreferences(db: Db, userId: number, companyId: num
     overdue: row?.overdue ?? ALERT_DEFAULTS.overdue,
     comment: row?.comment ?? ALERT_DEFAULTS.comment,
     mention: row?.mention ?? ALERT_DEFAULTS.mention,
+    digest: row?.digest ?? ALERT_DEFAULTS.digest,
   };
 }
 
@@ -38,6 +41,7 @@ export async function updateAlertPreferences(
     overdue: input.overdue,
     comment: input.comment,
     mention: input.mention,
+    digest: input.digest,
   };
   return db.emailAlertPreference.upsert({
     where: { userId_companyId: { userId: input.userId, companyId: input.companyId } },

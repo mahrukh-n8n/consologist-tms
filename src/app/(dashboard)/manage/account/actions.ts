@@ -58,6 +58,7 @@ export async function updateAlertPrefsAction(formData: FormData): Promise<void> 
     overdue: value("overdue"),
     comment: value("comment"),
     mention: value("mention"),
+    digest: value("digest"),
   });
   revalidatePath("/manage/account");
 }
