@@ -41,7 +41,7 @@ export type DocumentData = {
   attachments: DocumentAttachmentMeta[];
 };
 
-export function DocumentButton({ id, title, canManage }: { id: number; title: string; canManage: boolean }) {
+export function DocumentButton({ id, title, canManage, asTitle = false }: { id: number; title: string; canManage: boolean; asTitle?: boolean }) {
   const [document, setDocument] = useState<DocumentData | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -62,9 +62,21 @@ export function DocumentButton({ id, title, canManage }: { id: number; title: st
 
   return (
     <>
-      <Button variant="outline" size="sm" onClick={open} disabled={pending} aria-label={`Open document ${title}`}>
-        <FileText />{pending ? "Opening…" : "Open"}
-      </Button>
+      {asTitle ? (
+        <button
+          type="button"
+          onClick={open}
+          disabled={pending}
+          aria-label={`Open document ${title}`}
+          className="break-words text-left font-bold underline-offset-2 hover:underline focus-visible:underline focus-visible:outline-none disabled:opacity-60"
+        >
+          {title}
+        </button>
+      ) : (
+        <Button variant="outline" size="sm" onClick={open} disabled={pending} aria-label={`Open document ${title}`}>
+          <FileText />{pending ? "Opening…" : "Open"}
+        </Button>
+      )}
       {document && <DocumentDrawer document={document} canManage={canManage} onClose={() => setDocument(null)} />}
     </>
   );

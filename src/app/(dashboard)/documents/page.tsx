@@ -101,7 +101,7 @@ export default async function DocumentsPage({
             {documents.map((doc) => (
               <li key={doc.id} className="flex flex-wrap items-center justify-between gap-3 p-4">
                 <div className="min-w-0">
-                  <h2 className="break-words font-bold">{doc.title}</h2>
+                  <h2 className="break-words font-bold"><DocumentButton asTitle id={doc.id} title={doc.title} canManage={canManage} /></h2>
                   <p className="text-sm text-muted-foreground">
                     {doc.project.name} · v{doc.version} · {doc._count.attachments} attachments · Updated {doc.updatedAt.toISOString().slice(0, 10)}
                   </p>
