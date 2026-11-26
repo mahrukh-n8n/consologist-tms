@@ -201,6 +201,8 @@ export async function runDueAlerts(db: Db, now = new Date()): Promise<DueAlertRu
 
       for (const { user } of task.assignees) {
         const prefs = await preferences(db, user.id, companyId);
+        // When the daily diary is on, it carries due-soon/overdue instead of per-task mail.
+        if (prefs.digest) continue;
         if (overdueNow ? !prefs.overdue : !prefs.dueSoon) continue;
 
         const sent = await deliver(
