@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@/generated/prisma/client";
 import type { z } from "zod";
-import { assertProjectMember } from "@/lib/projects/access";
+import { assertProjectWrite } from "@/lib/projects/access";
 import {
   MAX_ATTACHMENT_BYTES,
   attachmentSchema,
@@ -23,7 +23,7 @@ export async function gkCreateDocument(
     select: { id: true },
   });
   if (!project) throw new Error("Project not found in this workspace.");
-  await assertProjectMember(db, companyId, userId, input.projectId);
+  await assertProjectWrite(db, companyId, userId, input.projectId);
   return db.projectDocument.create({
     data: { projectId: input.projectId, title: input.title, createdById: userId, updatedById: userId },
   });
@@ -41,7 +41,7 @@ export async function gkUpdateDocument(
       select: { id: true, version: true, title: true, contentMarkdown: true, projectId: true },
     });
     if (!doc) throw new Error("Document not found in this workspace.");
-    await assertProjectMember(tx, companyId, userId, doc.projectId);
+    await assertProjectWrite(tx, companyId, userId, doc.projectId);
     if (doc.version !== input.version) {
       throw new Error("This document changed in another window. Reload before saving.");
     }
@@ -84,7 +84,7 @@ export async function gkAddDocumentAttachment(
     select: { id: true, projectId: true },
   });
   if (!doc) throw new Error("Document not found in this workspace.");
-  await assertProjectMember(db, companyId, userId, doc.projectId);
+  await assertProjectWrite(db, companyId, userId, doc.projectId);
   return db.documentAttachment.create({
     data: {
       documentId: doc.id,
@@ -110,7 +110,7 @@ export async function gkDeleteDocumentAttachment(
     select: { id: true, document: { select: { projectId: true } } },
   });
   if (!attachment) throw new Error("Attachment not found in this workspace.");
-  await assertProjectMember(db, companyId, userId, attachment.document.projectId);
+  await assertProjectWrite(db, companyId, userId, attachment.document.projectId);
   await db.documentAttachment.delete({ where: { id: attachment.id } });
 }
 
@@ -122,7 +122,7 @@ export async function gkSetDocumentArchived(db: Db, companyId: number, userId: n
       select: { projectId: true },
     });
     if (!doc) throw new Error("Document not found in this workspace.");
-    await assertProjectMember(tx, companyId, userId, doc.projectId);
+    await assertProjectWrite(tx, companyId, userId, doc.projectId);
     const archivedAt = archived ? new Date() : null;
     const changed = await tx.projectDocument.updateMany({
       where: { id: documentId, archivedAt: archived ? null : { not: null } },
@@ -153,7 +153,7 @@ export async function deleteDocumentWithAudit(
       },
     });
     if (!doc) throw new Error("Document not found in this workspace.");
-    await assertProjectMember(tx, input.companyId, input.actorId, doc.projectId);
+    await assertProjectWrite(tx, input.companyId, input.actorId, doc.projectId);
     const audit = await tx.deletionAudit.create({
       data: {
         companyId: input.companyId,

@@ -1,4 +1,5 @@
 import type { PrismaClient as Db } from "@/generated/prisma/client";
+import { assertProjectWrite } from "@/lib/projects/access";
 
 /**
  * Task file gatekeeper.
@@ -15,9 +16,10 @@ export async function gkDeleteTaskFile(db: Db, companyId: number, userId: number
       itemType: "task",
       project: { group: { companyId } },
     },
-    select: { id: true },
+    select: { id: true, projectId: true },
   });
   if (!file) throw new Error("Attachment not found in this workspace.");
+  await assertProjectWrite(db, companyId, userId, file.projectId);
   await db.fileRecord.delete({ where: { id: file.id } });
   await db.auditLog.create({
     data: {

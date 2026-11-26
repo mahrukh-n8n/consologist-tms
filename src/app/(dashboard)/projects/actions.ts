@@ -5,7 +5,7 @@ import { requireCompany } from "@/lib/company/require-company";
 import { prisma } from "@/lib/db";
 import { requireWriteGate } from "@/modules/auth-rbac/middleware/page-access";
 import { createGroupSchema, createProjectSchema, createGroupAndNotify, gkCreateProject } from "@/lib/projects/service";
-import { addProjectMemberSchema, gkAddProjectMember, gkRemoveProjectMember, removeProjectMemberSchema } from "@/lib/projects/members";
+import { addProjectMemberSchema, gkAddProjectMember, gkRemoveProjectMember, gkSetProjectMemberAccess, removeProjectMemberSchema, setProjectMemberAccessSchema } from "@/lib/projects/members";
 
 export type ProjectState = { success: boolean; error?: string };
 
@@ -96,5 +96,23 @@ export async function removeProjectMemberAction(_prev: ProjectState, formData: F
     return { success: true };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : "Could not remove the member." };
+  }
+}
+
+export async function setProjectMemberAccessAction(_prev: ProjectState, formData: FormData): Promise<ProjectState> {
+  const { user, company } = await requireCompany();
+  try {
+    await requireWriteGate(user.id, company.id, "projects");
+    const parsed = setProjectMemberAccessSchema.safeParse({
+      projectId: formData.get("projectId"),
+      userId: formData.get("userId"),
+      accessOverride: formData.get("accessOverride"),
+    });
+    if (!parsed.success) return { success: false, error: "Invalid access level." };
+    await gkSetProjectMemberAccess(prisma, company.id, user.id, parsed.data);
+    revalidatePath("/projects");
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : "Access not changed." };
   }
 }

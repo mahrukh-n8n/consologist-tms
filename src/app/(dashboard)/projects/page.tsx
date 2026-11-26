@@ -126,6 +126,7 @@ export default async function ProjectsPage() {
                                 name: member.user.fullName,
                                 email: member.user.email,
                                 role: member.role,
+                                accessOverride: member.accessOverride,
                                 isOwner: member.userId === project.ownerId,
                               }))}
                               addable={memberData.get(project.id)!.addable.map((candidate) => ({

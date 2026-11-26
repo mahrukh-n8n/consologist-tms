@@ -6,6 +6,7 @@ import { createNotification } from "@/lib/notifications/service";
 import { createWorkspaceBackup, executeWorkspaceRestore, deleteWorkspaceBackup } from "@/lib/backup/backup-service";
 import { registerBackupSources } from "@/lib/backup/register-sources";
 import { inviteWorkspaceUser, revokeWorkspaceInvitation } from "@/lib/users/membership";
+import { removeWorkspaceMember } from "@/lib/users/removal";
 import { updateAlertPreferences } from "@/lib/account/alert-preferences";
 import type { CreateTaskInput, UpdateTaskStatusInput, AddCommentInput } from "@/lib/tasks/schema";
 import { deleteCommentWithAudit, deleteTaskWithAudit } from "@/lib/audit/delete-with-audit";
@@ -14,7 +15,7 @@ import { gkDeleteTaskFile } from "@/lib/mutations/task-files";
 import { gkCreateCustomStatus, archiveCustomStatus } from "@/lib/tasks/custom-statuses";
 import { pauseSchedule, upsertSchedule } from "@/lib/backup/schedule";
 import { gkCreateGroup, gkCreateProject } from "@/lib/projects/service";
-import { gkAddProjectMember, gkRemoveProjectMember } from "@/lib/projects/members";
+import { gkAddProjectMember, gkRemoveProjectMember, gkSetProjectMemberAccess } from "@/lib/projects/members";
 import { gkCreateDiscussion } from "@/lib/discussions/service";
 import { gkCreateEvent } from "@/lib/calendar/service";
 import { gkCreateTimeRecord } from "@/lib/time/service";
@@ -85,6 +86,15 @@ async function executeRevokeInvite(db: Db, payload: Record<string, unknown>, _s:
     invitationId: Number(payload["invitationId"]),
   });
   return { entityId: null };
+}
+
+async function executeRemoveWorkspaceMember(db: Db, payload: Record<string, unknown>, submitterId: number, companyId: number) {
+  const result = await removeWorkspaceMember(db, {
+    companyId,
+    actorId: submitterId,
+    targetUserId: Number(payload["userId"]),
+  });
+  return { entityId: result.userId };
 }
 
 async function executeBackupCreate(db: Db, payload: Record<string, unknown>, submitterId: number, companyId: number) {
@@ -257,6 +267,11 @@ async function executeAddProjectMember(db: Db, payload: Record<string, unknown>,
   return { entityId: result.id, result };
 }
 
+async function executeSetProjectMemberAccess(db: Db, payload: Record<string, unknown>, submitterId: number, companyId: number) {
+  const result = await gkSetProjectMemberAccess(db, companyId, submitterId, payload as never);
+  return { entityId: null, result };
+}
+
 async function executeRemoveProjectMember(db: Db, payload: Record<string, unknown>, submitterId: number, companyId: number) {
   const result = await gkRemoveProjectMember(db, companyId, submitterId, payload as never);
   return { entityId: result.id };
@@ -311,6 +326,7 @@ const HANDLERS: Record<string, Handler> = {
   "tasks.update_status": executeStatus,
   "users.invite": executeInvite,
   "users.revoke_invitation": executeRevokeInvite,
+  "users.remove_member": executeRemoveWorkspaceMember,
   "backups.create": executeBackupCreate,
   "backups.restore": executeBackupRestore,
   "backups.delete": executeBackupDelete,
@@ -353,6 +369,7 @@ const HANDLERS: Record<string, Handler> = {
   "backups.pause_schedule": executeBackupSchedulePause,
   "projects.add_member": executeAddProjectMember,
   "projects.remove_member": executeRemoveProjectMember,
+  "projects.set_member_access": executeSetProjectMemberAccess,
   "tasks.archive": executeTaskArchive,
   "tasks.bulk": executeTaskBulk,
   "task_lists.delete": executeTaskListDelete,

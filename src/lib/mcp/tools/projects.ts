@@ -4,9 +4,11 @@ import {
   addProjectMemberSchema,
   gkAddProjectMember,
   gkRemoveProjectMember,
+  gkSetProjectMemberAccess,
   listAddableMembers,
   listProjectMembers,
   removeProjectMemberSchema,
+  setProjectMemberAccessSchema,
 } from "@/lib/projects/members";
 import { assertProjectAccess, canSeeAllProjects } from "@/lib/projects/access";
 import { z } from "zod";
@@ -70,6 +72,16 @@ export const projectTools: McpToolDefinition[] = [
     accessLevel: "WRITE",
     async handler(ctx, input) {
       return commitResult(await gkAddProjectMember(ctx.db, ctx.companyId, ctx.userId, input as never));
+    },
+  },
+  {
+    name: "projects.set_member_access",
+    description: "Override a project member's access: INHERIT, READ_ONLY, COMMENT or READ_WRITE.",
+    inputSchema: setProjectMemberAccessSchema,
+    requiredPageKey: "projects",
+    accessLevel: "WRITE",
+    async handler(ctx, input) {
+      return commitResult(await gkSetProjectMemberAccess(ctx.db, ctx.companyId, ctx.userId, input as never));
     },
   },
   {

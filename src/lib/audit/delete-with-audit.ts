@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@/generated/prisma/client";
+import { assertProjectWrite } from "@/lib/projects/access";
 
 type Db = PrismaClient;
 
@@ -19,6 +20,7 @@ export async function deleteTaskWithAudit(
       },
     });
     if (!task) throw new Error("Task not found in this workspace.");
+    await assertProjectWrite(tx, input.companyId, input.actorId, task.projectId);
     const comments = await tx.comment.findMany({ where: { itemType: "task", itemId: task.id } });
     const timeRecords = await tx.timeRecord.findMany({ where: { linkItemType: "task", linkItemId: task.id } });
 
@@ -54,6 +56,7 @@ export async function deleteCommentWithAudit(
       where: { id: input.commentId, projectId: { in: projectIds } },
     });
     if (!comment) throw new Error("Comment not found in this workspace.");
+    await assertProjectWrite(tx, input.companyId, input.actorId, comment.projectId);
     const audit = await tx.deletionAudit.create({
       data: {
         companyId: input.companyId,

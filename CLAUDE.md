@@ -114,6 +114,8 @@ and MCP API-key creation/revocation (an agent must not mint its own credentials)
 - Optional **Vibrant & Block-based** theme via the top-right Flat/Block toggle; persisted in `localStorage`.
 - Tasks support list, board, table and Eisenhower-matrix views (`/tasks?view=…`), task-list creation, rename, archive and delete.
 - Subtasks (`Task.parentId`), parent reassignment, list moves, drag-and-drop in the list view (drop on a list header = move list, drop on a task = make subtask), bulk archive/unarchive/move/delete, task archive (`Task.archivedAt`), archived tasks and archived task lists at `/tasks?archived=1`.
+- Project access override: `ProjectMember.accessOverride` (INHERIT / READ_ONLY / COMMENT / READ_WRITE) refines the workspace role per project; enforced by `getProjectAccess`/`assertProjectWrite`/`assertProjectComment` in gatekeepers, GUI and MCP. Owners and workspace admins always have write.
+- Members can be removed from a project (Members dialog, `projects.remove_member`) or from the workspace (Users page, `users.remove_member`; guards: not self, not a project owner, never the last super admin).
 - Filters can be saved by name (`SavedSearch`, appKey `tasks`) and reapplied from the Filters panel.
 - Eisenhower quadrant (`Task.quadrant`: DO_FIRST / SCHEDULE / DELEGATE / ELIMINATE) is a nullable classification independent of workflow status; editable inline in every view, filterable, and shown in the matrix view.
 - The list view groups tasks under their task list (project + list heading, per-list counts, empty lists included).

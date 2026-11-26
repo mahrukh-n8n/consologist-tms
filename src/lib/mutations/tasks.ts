@@ -1,7 +1,7 @@
 import type { PrismaClient, Task } from "@/generated/prisma/client";
 import type { ArchiveTaskInput, BulkTaskActionInput, CreateTaskInput, UpdateTaskDetailsInput, UpdateTaskStatusInput } from "@/lib/tasks/schema";
 import { TaskStatus } from "@/generated/prisma/enums";
-import { assertProjectMember } from "@/lib/projects/access";
+import { assertProjectWrite } from "@/lib/projects/access";
 
 type Tx = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
 
@@ -20,7 +20,7 @@ export async function gkCreateTask(
     select: { id: true },
   });
   if (!project) throw new Error("Project not found in this workspace.");
-  await assertProjectMember(tx, companyId, userId, input.projectId);
+  await assertProjectWrite(tx, companyId, userId, input.projectId);
 
   const list = await tx.taskList.findFirst({
     where: { id: input.listId, projectId: input.projectId },
@@ -120,7 +120,7 @@ export async function gkUpdateTaskStatus(
     select: { id: true, status: true, projectId: true },
   });
   if (!task) throw new Error("Task not found in this workspace.");
-  await assertProjectMember(tx, companyId, actorId, task.projectId);
+  await assertProjectWrite(tx, companyId, actorId, task.projectId);
   if (!ALLOWED_TRANSITIONS[task.status].includes(input.status)) {
     throw new Error(`Invalid status transition ${task.status} → ${input.status}.`);
   }
@@ -202,14 +202,14 @@ export async function gkUpdateTaskDetails(
     select: { id: true, projectId: true, listId: true, status: true, title: true },
   });
   if (!task) throw new Error("Task not found in this workspace.");
-  await assertProjectMember(tx, companyId, actorId, task.projectId);
+  await assertProjectWrite(tx, companyId, actorId, task.projectId);
 
   const project = await tx.project.findFirst({
     where: { id: input.projectId, group: { companyId } },
     select: { id: true },
   });
   if (!project) throw new Error("Project not found in this workspace.");
-  await assertProjectMember(tx, companyId, actorId, input.projectId);
+  await assertProjectWrite(tx, companyId, actorId, input.projectId);
 
   const list = await tx.taskList.findFirst({
     where: { id: input.listId, projectId: input.projectId, archived: false },
@@ -390,7 +390,7 @@ export async function gkBulkUpdateTasks(
   });
   if (tasks.length !== ids.length) throw new Error("Some selected tasks were not found in this workspace.");
   for (const projectId of new Set(tasks.map((task) => task.projectId))) {
-    await assertProjectMember(tx, companyId, actorId, projectId);
+    await assertProjectWrite(tx, companyId, actorId, projectId);
   }
 
   if (input.action === "archive" || input.action === "unarchive") {

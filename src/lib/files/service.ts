@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { PrismaClient } from "@/generated/prisma/client";
 import { uploadFile } from "@/modules/google-drive";
 import { isConnected } from "@/modules/google-drive";
-import { assertProjectMember } from "@/lib/projects/access";
+import { assertProjectWrite } from "@/lib/projects/access";
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
@@ -63,7 +63,7 @@ export async function createFileRecord(
 ) {
   const project = await db.project.findFirst({ where: { id: input.projectId, group: { companyId } }, select: { id: true } });
   if (!project) throw new Error("Project not found in this workspace.");
-  await assertProjectMember(db, companyId, userId, input.projectId);
+  await assertProjectWrite(db, companyId, userId, input.projectId);
   return db.fileRecord.create({
     data: {
       projectId: input.projectId,
@@ -89,7 +89,7 @@ export async function uploadWorkspaceFile(
 ) {
   const project = await db.project.findFirst({ where: { id: input.projectId, group: { companyId } }, select: { id: true } });
   if (!project) throw new Error("Project not found in this workspace.");
-  await assertProjectMember(db, companyId, userId, input.projectId);
+  await assertProjectWrite(db, companyId, userId, input.projectId);
   if (!(await isConnected(db, companyId))) throw new Error("Google Drive is not connected for this workspace.");
   if (input.bytes.length === 0) throw new Error("The selected file is empty.");
   if (input.bytes.length > MAX_UPLOAD_BYTES) throw new Error("Files are limited to 10 MB.");
@@ -126,7 +126,7 @@ export async function uploadTaskFile(
     select: { id: true, projectId: true },
   });
   if (!task) throw new Error("Task not found in this workspace.");
-  await assertProjectMember(db, companyId, userId, task.projectId);
+  await assertProjectWrite(db, companyId, userId, task.projectId);
   return uploadWorkspaceFile(db, companyId, userId, {
     projectId: task.projectId,
     name: input.name,

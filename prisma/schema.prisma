@@ -43,6 +43,14 @@ enum ProjectRole {
   GUEST
 }
 
+/// Per-project access override. INHERIT uses the workspace role.
+enum ProjectAccess {
+  INHERIT
+  READ_ONLY
+  COMMENT
+  READ_WRITE
+}
+
 enum TaskStatus {
   NO_PROGRESS
   IN_PROGRESS
@@ -466,10 +474,11 @@ model Project {
 }
 
 model ProjectMember {
-  id        Int         @id @default(autoincrement())
-  projectId Int         @map("project_id")
-  userId    Int         @map("user_id")
-  role      ProjectRole @default(MEMBER)
+  id             Int           @id @default(autoincrement())
+  projectId      Int           @map("project_id")
+  userId         Int           @map("user_id")
+  role           ProjectRole   @default(MEMBER)
+  accessOverride ProjectAccess @default(INHERIT) @map("access_override")
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)

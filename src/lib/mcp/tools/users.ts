@@ -9,6 +9,7 @@ import {
 } from "@/lib/users/membership";
 import { commitResult, dataResult } from "@/modules/mcp/utils/serialize";
 import type { Role } from "@/generated/prisma/enums";
+import { removeWorkspaceMember, removeWorkspaceMemberSchema } from "@/lib/users/removal";
 
 export const userTools: McpToolDefinition[] = [
   {
@@ -50,6 +51,21 @@ export const userTools: McpToolDefinition[] = [
         role: invitation.role,
         expiresAt: invitation.expiresAt.toISOString(),
       });
+    },
+  },
+  {
+    name: "users.remove_member",
+    description: "Remove a member from the workspace (not self, not a project owner, never the last super admin).",
+    inputSchema: removeWorkspaceMemberSchema,
+    requiredPageKey: "manage-system-users",
+    accessLevel: "WRITE",
+    async handler(ctx, input) {
+      const { userId } = input as { userId: number };
+      return commitResult(await removeWorkspaceMember(ctx.db, {
+        companyId: ctx.companyId,
+        actorId: ctx.userId,
+        targetUserId: userId,
+      }));
     },
   },
   {

@@ -1,5 +1,6 @@
 import type { PrismaClient, Comment } from "@/generated/prisma/client";
 import type { AddCommentInput } from "@/lib/tasks/schema";
+import { assertProjectComment } from "@/lib/projects/access";
 
 type Tx = Parameters<Parameters<PrismaClient["$transaction"]>[0]>[0];
 
@@ -15,6 +16,7 @@ export async function gkCreateComment(
     select: { id: true, projectId: true },
   });
   if (!task) throw new Error("Task not found in this workspace.");
+  await assertProjectComment(tx, companyId, userId, task.projectId);
 
   return tx.comment.create({
     data: {

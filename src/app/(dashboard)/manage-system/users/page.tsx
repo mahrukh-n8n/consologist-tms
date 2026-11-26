@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InviteForm } from "./invite-form";
 import { revokeInvitationAction } from "./actions";
+import { RemoveMemberButton } from "./remove-member-button";
 
 export default async function UsersPage() {
-  const { company } = await requireCompany();
+  const { user, company } = await requireCompany();
   const [members, invitations] = await Promise.all([
     listWorkspaceUsers(prisma, company.id),
     listWorkspaceInvitations(prisma, company.id),
@@ -33,8 +34,13 @@ export default async function UsersPage() {
         <CardContent className="space-y-2 text-sm">
           {members.map((member) => (
             <div key={member.id} className="flex items-center justify-between rounded-xl border-2 border-ink bg-card p-2 shadow-[2px_2px_0_var(--ink)]">
-              <span>{member.user.fullName} · {member.user.email}</span>
-              <span className="text-muted-foreground">{member.role}</span>
+              <span>{member.user.fullName} · {member.user.email}{member.userId === user.id ? " (you)" : ""}</span>
+              <span className="flex items-center gap-2">
+                <span className="text-muted-foreground">{member.role}</span>
+                {member.userId === user.id ? null : (
+                  <RemoveMemberButton userId={member.userId} name={member.user.fullName} />
+                )}
+              </span>
             </div>
           ))}
         </CardContent>

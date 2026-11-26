@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,10 +14,67 @@ import {
 } from "@/components/ui/dialog";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { notify } from "@/lib/notifications/client";
-import { addProjectMemberAction, removeProjectMemberAction, type ProjectState } from "./actions";
+import {
+  addProjectMemberAction,
+  removeProjectMemberAction,
+  setProjectMemberAccessAction,
+  type ProjectState,
+} from "./actions";
 
-type Member = { userId: number; name: string; email: string; role: string; isOwner: boolean };
+type Member = {
+  userId: number;
+  name: string;
+  email: string;
+  role: string;
+  isOwner: boolean;
+  accessOverride: string;
+};
 type Candidate = { id: number; name: string; email: string };
+
+const ACCESS_OPTIONS = [
+  { value: "INHERIT", label: "Inherit workspace role" },
+  { value: "READ_ONLY", label: "Read only" },
+  { value: "COMMENT", label: "Comment only" },
+  { value: "READ_WRITE", label: "Read & write" },
+];
+
+function MemberAccess({ projectId, member }: { projectId: number; member: Member }) {
+  const router = useRouter();
+  const [state, action, pending] = useActionState<ProjectState, FormData>(setProjectMemberAccessAction, { success: false });
+  const formRef = useRef<HTMLFormElement>(null);
+  const [value, setValue] = useState(member.accessOverride);
+
+  useEffect(() => {
+    if (state.error) notify.error("Access not changed", state.error, `member-access-${projectId}-${member.userId}`);
+    if (state.success) {
+      notify.success("Project access updated", member.name, `member-access-${projectId}-${member.userId}`);
+      router.refresh();
+    }
+  }, [state, projectId, member.userId, member.name, router]);
+
+  if (member.isOwner) {
+    return <span className="text-[11px] font-bold uppercase text-muted-foreground">Full access (owner)</span>;
+  }
+
+  return (
+    <form ref={formRef} action={action} className="min-w-48">
+      <input type="hidden" name="projectId" value={projectId} />
+      <input type="hidden" name="userId" value={member.userId} />
+      <input type="hidden" name="accessOverride" value={value} />
+      <SearchableSelect
+        id={`member-access-${projectId}-${member.userId}`}
+        noClear
+        value={value}
+        onChange={(next) => {
+          setValue(next);
+          formRef.current?.requestSubmit();
+        }}
+        options={ACCESS_OPTIONS}
+        disabled={pending}
+      />
+    </form>
+  );
+}
 
 export function ProjectMembers({
   projectId,
@@ -58,7 +115,11 @@ export function ProjectMembers({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button type="button" aria-label={`Manage members of ${projectName}`} className="inline-flex items-center gap-1 underline">
+        <button
+          type="button"
+          aria-label={`Manage members of ${projectName}`}
+          className="inline-flex items-center gap-1 underline"
+        >
           <Users className="size-3.5" /> Members ({members.length})
         </button>
       </DialogTrigger>
@@ -66,7 +127,8 @@ export function ProjectMembers({
         <DialogHeader>
           <DialogTitle>{projectName} — members</DialogTitle>
           <DialogDescription>
-            Only project members can see this project and its tasks, documents and files. Workspace admins see everything.
+            Workspace role is inherited unless a project override is set. Read only can view,
+            comment only can also comment, read &amp; write can change tasks, documents and files.
           </DialogDescription>
         </DialogHeader>
 
@@ -76,11 +138,12 @@ export function ProjectMembers({
               <p className="text-sm text-muted-foreground">No members yet.</p>
             ) : (
               members.map((member) => (
-                <div key={member.userId} className="flex items-center justify-between gap-2 rounded-xl border-2 border-ink bg-card px-3 py-2 text-sm shadow-[2px_2px_0_var(--ink)]">
-                  <span className="min-w-0">
+                <div key={member.userId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-ink bg-card px-3 py-2 text-sm shadow-[2px_2px_0_var(--ink)]">
+                  <span className="min-w-0 flex-1">
                     <span className="block truncate font-bold">{member.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">{member.email} · {member.role.toLowerCase()}</span>
                   </span>
+                  <MemberAccess projectId={projectId} member={member} />
                   {member.isOwner ? (
                     <span className="chip chip-purple shrink-0">Owner</span>
                   ) : (
@@ -103,7 +166,6 @@ export function ProjectMembers({
               <div className="flex flex-wrap items-end gap-2">
                 <div className="min-w-56 flex-1">
                   <SearchableSelect
-                    compact
                     id={`add-member-${projectId}`}
                     noClear
                     value={userId}
@@ -112,7 +174,7 @@ export function ProjectMembers({
                   />
                 </div>
                 <Button type="submit" size="sm" disabled={adding || !userId}>
-                  <UserPlus className="size-4" /> {adding ? "Adding…" : "Add"}
+                  <UserPlus className="mr-1.5 size-4" /> {adding ? "Adding…" : "Add"}
                 </Button>
               </div>
             </form>
